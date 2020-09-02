@@ -103,7 +103,7 @@ class helpdesk extends frontControllerApplication
 	);
 	
 	# Define the available levels of busyness
-	var $busyness = array (
+	private $busyness = array (
 		10		=> 'very low',
 		30		=> 'moderate',
 		60		=> 'high',
@@ -111,7 +111,7 @@ class helpdesk extends frontControllerApplication
 	);
 	
 	# Whether jQuery is loaded
-	var $jQueryLoaded = false;
+	private $jQueryLoaded = false;
 	
 	
 	# Additional initialisation
