@@ -694,11 +694,12 @@ class helpdesk extends frontControllerApplication
 			DISTINCT
 				search
 			FROM {$this->settings['database']}.{$this->settings['searchTable']}
-			WHERE username__JOIN__{$this->settings['peopleDatabase']}__people__reserved = '{$this->user}'
+			WHERE username__JOIN__{$this->settings['peopleDatabase']}__people__reserved = :user
 			ORDER BY id DESC
 			LIMIT {$this->settings['totalRecentSearches']}
 		;";
-		if (!$data = $this->databaseConnection->getPairs ($query)) {return false;}
+		$preparedStatementValues = array ('username' => $this->user);
+		if (!$data = $this->databaseConnection->getPairs ($query, false, $preparedStatementValues)) {return false;}
 		
 		# Assemble into a list
 		$list = array ();
@@ -977,7 +978,10 @@ class helpdesk extends frontControllerApplication
 		$html .= "\n<p>Total calls outstanding (not completed): <strong>" . $this->totalCalls () . "</strong></p>";
 		
 		# Calls per working day
-		$query = "SELECT (ROUND(COUNT(id) / ((UNIX_TIMESTAMP(NOW()) - UNIX_TIMESTAMP(MIN(timeSubmitted))) / ((7/5) * 24 * 60 * 60)),2)) as count FROM {$this->settings['database']}.{$this->settings['table']};";
+		$query = "SELECT
+			(ROUND(COUNT(id) / ((UNIX_TIMESTAMP(NOW()) - UNIX_TIMESTAMP(MIN(timeSubmitted))) / ((7/5) * 24 * 60 * 60)),2)) AS count
+			FROM {$this->settings['database']}.{$this->settings['table']}
+		;";
 		if ($data = $this->databaseConnection->getOne ($query)) {
 			$html .= "\n<p>Total calls logged per working day: <strong>{$data['count']}</strong></p>";
 		}
@@ -990,7 +994,8 @@ class helpdesk extends frontControllerApplication
 			ORDER BY Total DESC,problemarea
 		;";
 		if ($data = $this->databaseConnection->getData ($query)) {
-			$html .= "\n<h3>Problem areas:</h3>\n" . application::htmlTable ($data, array (), 'lines compressed', false);
+			$html .= "\n<h3>Problem areas:</h3>";
+			$html .= "\n" . application::htmlTable ($data, array (), 'lines compressed', false);
 		}
 		
 		# Average response time
@@ -998,7 +1003,8 @@ class helpdesk extends frontControllerApplication
 		// $html .= "\n<p>Average duration to resolve calls: <strong>{$data['workingdays']} working days</strong><br /><span class=\"comment\">Note: Average resolution duration is not necessary reliable, due to incomplete legacy data and a small number of long-standing calls which skew the data.</span></p>";
 		$query = "SELECT ROUND(((UNIX_TIMESTAMP(timeCompleted) - UNIX_TIMESTAMP(timeSubmitted)) / ((7/5) * 24 * 60 * 60)),0) as 'Working days', COUNT(id) as 'Number of calls' FROM {$this->settings['database']}.{$this->settings['table']} WHERE (UNIX_TIMESTAMP(timeCompleted) >= UNIX_TIMESTAMP(timeSubmitted)) GROUP BY 'Working days' ORDER BY 'Working days';";
 		$data = $this->databaseConnection->getData ($query);
-		$html .= "\n<h3>(Working) days to resolve calls:</h3>\n" . application::htmlTable ($data, array (), 'lines compressed', false);
+		$html .= "\n<h3>(Working) days to resolve calls:</h3>";
+		$html .= "\n" . application::htmlTable ($data, array (), 'lines compressed', false);
 		/*
 		foreach ($data as $index => $attributes) {
 			$barchart[$attributes['Working days']] = $attributes['Number of calls'];
