@@ -25,6 +25,7 @@ class helpdesk extends frontControllerApplication
 			'authentication' => true,	// All pages require authentication
 			'cols'			=> 55,	// Size of textareas
 			'totalRecentSearches' => 7,	// Number of recent searches to display
+			'sinenomineUrl' => false,
 			'apiUsername'			=> false,		// Optional API access
 			'tabUlClass' => 'tabsflat',
 		);
@@ -253,7 +254,7 @@ class helpdesk extends frontControllerApplication
 		echo "\n" . '<ul>';
 		echo "\n\t" . "<li><a href=\"{$this->baseUrl}/statistics.html\">Call statistics</a></li>";
 		echo "\n\t" . "<li><a href=\"{$this->baseUrl}/problemtypes/\">Change available problem types</a></li>";
-		//echo "\n\t" . "<li><a href=\"http://sinenomine.geog.cam.ac.uk/{$this->settings['database']}/\" target=\"_blank\">Login to the underlying database system</a></li>";
+		//echo "\n\t" . "<li><a href=\"{$this->settings['sinenomineUrl']}/{$this->settings['database']}/\" target=\"_blank\">Login to the underlying database system</a></li>";
 		echo "\n" . '</ul>';
 	}
 	
