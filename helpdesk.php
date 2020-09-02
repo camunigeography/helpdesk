@@ -227,35 +227,48 @@ class helpdesk extends frontControllerApplication
 	# Welcome screen
 	public function home ()
 	{
+		# Start the HTML
+		$html = '';
+		
 		# Start the page
-		echo "\n\n" . "<p>Welcome, {$this->userDetails['forename']}, to the {$this->settings['institution']} online helpdesk system for requesting help with {$this->settings['type']} problems.</p>";
+		$html .= "\n\n" . "<p>Welcome, {$this->userDetails['forename']}, to the {$this->settings['institution']} online helpdesk system for requesting help with {$this->settings['type']} problems.</p>";
 		
 		# Show current problems
 		if ($this->userIsAdministrator) {
-			echo "\n<h2>Unresolved calls <span>[admins only]</span></h2>";
+			$html .= "\n<h2>Unresolved calls <span>[admins only]</span></h2>";
 			$count = $this->totalCalls ();
-			echo "\n<p>Currently <a href=\"{$this->baseUrl}/calls/\" class=\"actions\"><strong>{$count} helpdesk calls</strong></a> outstanding.</p>";
+			$html .= "\n<p>Currently <a href=\"{$this->baseUrl}/calls/\" class=\"actions\"><strong>{$count} helpdesk calls</strong></a> outstanding.</p>";
 		}
 		
 		# Show my current calls
-		echo "\n<h2>My current/recent problems</h2>";
-		echo $this->showCallRate (false);
-		echo $this->calls (false);
+		$html .= "\n<h2>My current/recent problems</h2>";
+		$html .= $this->showCallRate (false);
+		$html .= $this->calls (false);
 		
 		# Show the reporting screen
-		echo "\n<h2>Report a new problem</h2>";
-		echo $this->reportForm ();
+		$html .= "\n<h2>Report a new problem</h2>";
+		$html .= $this->reportForm ();
+		
+		# Show the HTML
+		echo $html;
 	}
 	
 	
 	# Admin screen
 	public function admin ()
 	{
-		echo "\n" . '<ul>';
-		echo "\n\t" . "<li><a href=\"{$this->baseUrl}/statistics.html\">Call statistics</a></li>";
-		echo "\n\t" . "<li><a href=\"{$this->baseUrl}/problemtypes/\">Change available problem types</a></li>";
-		//echo "\n\t" . "<li><a href=\"{$this->settings['sinenomineUrl']}/{$this->settings['database']}/\" target=\"_blank\">Login to the underlying database system</a></li>";
-		echo "\n" . '</ul>';
+		# Start the HTML
+		$html = '';
+		
+		# Assemble the HTML
+		$html .= "\n" . '<ul>';
+		$html .= "\n\t" . "<li><a href=\"{$this->baseUrl}/statistics.html\">Call statistics</a></li>";
+		$html .= "\n\t" . "<li><a href=\"{$this->baseUrl}/problemtypes/\">Change available problem types</a></li>";
+		//$html .= "\n\t" . "<li><a href=\"{$this->settings['sinenomineUrl']}/{$this->settings['database']}/\" target=\"_blank\">Login to the underlying database system</a></li>";
+		$html .= "\n" . '</ul>';
+		
+		# Show the HTML
+		echo $html;
 	}
 	
 	
@@ -270,13 +283,16 @@ class helpdesk extends frontControllerApplication
 	# Wrapper function to send the administrator an e-mail listing errors
 	public /* public as per frontControllerApplication base class */ function throwError ($errors, $visible = true, $extraInfo = false)
 	{
+		# Start the HTML
+		$html = '';
+		
 		# Ensure the errors are an array
 		$errors = application::ensureArray ($errors);
 		
 		# Show the errors
 		if ($visible) {
 			foreach ($errors as $error) {
-				echo "\n<p class=\"warning\">$error</p>";
+				$html .= "\n<p class=\"warning\">$error</p>";
 			}
 		}
 		
@@ -288,9 +304,12 @@ class helpdesk extends frontControllerApplication
 		# Send the mail
 		if (application::sendAdministrativeAlert ($this->settings['administratorEmail'], 'Helpdesk', 'Helpdesk problem', $message)) {
 			if ($visible) {
-				echo '<p class="warning">The server administrator has been informed about ' . (count ($errors) == 1 ? 'this error' : 'these errors') . '.</p>';
+				$html .= "\n" . '<p class="warning">The server administrator has been informed about ' . (count ($errors) == 1 ? 'this error' : 'these errors') . '.</p>';
 			}
 		}
+		
+		# Return the HTML
+		return $html;
 	}
 	
 	
@@ -338,14 +357,14 @@ class helpdesk extends frontControllerApplication
 		
 		# Insert the new person in the people database
 		if (!$this->databaseConnection->insert ($this->settings['peopleDatabase'], 'people', $result)) {
-			$this->throwError ('There was a problem inserting the new user into the database.', false, application::dumpData ($this->databaseConnection->error (), false, true));
+			echo $this->throwError ('There was a problem inserting the new user into the database.', false, application::dumpData ($this->databaseConnection->error (), false, true));
 			return false;
 		}
 		
 		# Insert the new person in the administrators database if necessary
 		if (!$this->administrators) {
 			if (!$this->databaseConnection->insert ($this->settings['database'], 'administrators', array ("username__JOIN__{$this->settings['peopleDatabase']}__people__reserved" => $result['username']))) {
-				$this->throwError ('There was a problem inserting the new administrator into the administators database.');
+				echo $this->throwError ('There was a problem inserting the new administrator into the administators database.');
 				return false;
 			}
 		}
@@ -478,7 +497,7 @@ class helpdesk extends frontControllerApplication
 		# Insert the new call
 		$function = ($editCall ? 'update' : 'insert');
 		if (!$this->databaseConnection->$function ($this->settings['database'], $this->settings['table'], $result, ($editCall ? array ('id' => $result['id']) : false), $emptyToNull = false)) {
-			$this->throwError ('There was a problem ' . ($editCall ? 'updating the call' : 'logging the request') . '.');
+			$html .= $this->throwError ('There was a problem ' . ($editCall ? 'updating the call' : 'logging the request') . '.');
 			var_dump ($this->databaseConnection->error ());
 			return $html;
 		}
@@ -508,7 +527,7 @@ class helpdesk extends frontControllerApplication
 			$subject = "Re: [Helpdesk][$callId] " . $result['subject'];
 			$to = "\"{$user['_fullname']}\" <{$user['_preferredEmail']}>";
 			if (!application::utf8Mail ($to, $subject, $message, $headers)) {
-				$this->throwError ("There was a problem sending an e-mail to alert the {$this->settings['type']} staff to a new call, but the call itself has been logged successfully.");
+				$html .= $this->throwError ("There was a problem sending an e-mail to alert the {$this->settings['type']} staff to a new call, but the call itself has been logged successfully.");
 			}
 			$html .= "\n<br /><p>The following e-mail has been sent:</p>\n<hr />";
 			$html .= "\n<pre>To: {$user['_preferredEmail']}\n" . htmlspecialchars ($headers) . 'Subject: ' . htmlspecialchars ($subject) . "\n" . htmlspecialchars ($message)  . '</pre>';
@@ -521,7 +540,7 @@ class helpdesk extends frontControllerApplication
 			$message  = "\nA support call has been " . ($editCall ? 'updated' : 'submitted') . ". The details are online at:\n\n{$callDetailsUrl}\n\n" . stripslashes ($result['details']);
 			$message .= "\n\n\n** Please respond to the user using the web interface rather than replying to this e-mail directly. **";
 			if (!application::utf8Mail ($this->getRecipients (), ("[Helpdesk][{$callId}] " . $result['subject']) . ($editCall ? ' (updated)' : ''), wordwrap ($message), $headers)) {
-				$this->throwError ("There was a problem sending an e-mail to alert the {$this->settings['type']} staff to the call, but the call details have been logged successfully.");
+				$html .= $this->throwError ("There was a problem sending an e-mail to alert the {$this->settings['type']} staff to the call, but the call details have been logged successfully.");
 			}
 		}
 		
@@ -751,7 +770,7 @@ class helpdesk extends frontControllerApplication
 		if ($searchTerm && $this->settings['searchTable']) {
 			$log = array ('search' => $searchTerm, 'username__JOIN__people__people__reserved' => $this->user);
 			if (!$this->databaseConnection->insert ($this->settings['database'], $this->settings['searchTable'], $log)) {
-				$this->throwError ("There was a problem logging the helpdesk search phrase. The details were: \n\n" . print_r ($log, true), false);
+				echo $this->throwError ("There was a problem logging the helpdesk search phrase. The details were: \n\n" . print_r ($log, true), false);
 			}
 		}
 		
