@@ -114,6 +114,54 @@ class helpdesk extends frontControllerApplication
 	private $jQueryLoaded = false;
 	
 	
+	# Database structure definition
+	public function databaseStructure ()
+	{
+		return "
+			
+			-- Administrators
+			CREATE TABLE `administrators` (
+			  `username__JOIN__people__people__reserved` varchar(255) COLLATE utf8_unicode_ci PRIMARY KEY NOT NULL COMMENT 'Username',
+			  `active` enum('','Yes','No') COLLATE utf8_unicode_ci NOT NULL DEFAULT 'Yes' COMMENT 'Currently active?',
+			  `receiveHelpdeskEmail` enum('Yes','No') COLLATE utf8_unicode_ci NOT NULL DEFAULT 'Yes',
+			  `state` text COLLATE utf8_unicode_ci COMMENT 'Headings expanded'
+			) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Helpdesk administrators';
+			
+			-- Calls
+			CREATE TABLE `calls` (
+			  `id` int PRIMARY KEY NOT NULL AUTO_INCREMENT COMMENT 'Call number',
+			  `subject` varchar(60) COLLATE utf8_unicode_ci NOT NULL COMMENT 'Subject',
+			  `username__JOIN__people__people__reserved` varchar(255) COLLATE utf8_unicode_ci NOT NULL COMMENT 'User',
+			  `problemarea__JOIN__helpdesk__problemareas__reserved` int NOT NULL COMMENT 'Category of problem',
+			  `details` text COLLATE utf8_unicode_ci NOT NULL COMMENT 'Details of problem, or describe what you did',
+			  `timeSubmitted` datetime NOT NULL,
+			  `lastUpdated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Time this call was last updated (or created)',
+			  `staff__JOIN__helpdesk__administrators__reserved` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+			  `currentStatus` enum('submitted','timetabled','researching','completed','deferred') COLLATE utf8_unicode_ci NOT NULL DEFAULT 'submitted' COMMENT 'Status',
+			  `reply` text COLLATE utf8_unicode_ci NOT NULL,
+			  `timeOpened` datetime DEFAULT NULL,
+			  `timeCompleted` datetime DEFAULT NULL,
+			  `internalNotes` text COLLATE utf8_unicode_ci
+			) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+			
+			-- Problem areas
+			CREATE TABLE `problemareas` (
+			  `id` int PRIMARY KEY NOT NULL AUTO_INCREMENT,
+			  `problemarea` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+			  `listpriority` float(3,1) NOT NULL DEFAULT '0.0'
+			) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+			
+			-- Searches
+			CREATE TABLE `searches` (
+			  `id` int PRIMARY KEY NOT NULL AUTO_INCREMENT COMMENT 'Automatic key',
+			  `search` varchar(255) COLLATE utf8_unicode_ci NOT NULL COMMENT 'Search phrase',
+			  `username__JOIN__people__people__reserved` varchar(20) COLLATE utf8_unicode_ci NOT NULL COMMENT 'Username',
+			  `datetime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Automatic timestamp'
+			) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Table of searches';
+		";
+	}
+	
+	
 	# Additional initialisation
 	public function main ()
 	{
