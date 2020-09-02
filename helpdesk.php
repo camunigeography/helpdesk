@@ -26,6 +26,7 @@ class helpdesk extends frontControllerApplication
 			'cols'			=> 55,	// Size of textareas
 			'totalRecentSearches' => 7,	// Number of recent searches to display
 			'apiUsername'			=> false,		// Optional API access
+			'tabUlClass' => 'tabsflat',
 		);
 		
 		# Return the defaults
