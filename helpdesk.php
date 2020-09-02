@@ -11,7 +11,6 @@ class helpdesk extends frontControllerApplication
 		$defaults = array (
 			'database' => 'helpdesk',
 			'table' => 'calls',
-			'searchTable'	=> 'searches',
 			'peopleDatabase' => 'people',
 			'emailDomain' => 'cam.ac.uk',
 			'completedJobExpiryDays' => 7,
@@ -705,14 +704,11 @@ class helpdesk extends frontControllerApplication
 	# Function to show recent searches
 	private function recentSearches ()
 	{
-		# End if not supported
-		if (!$this->settings['searchTable']) {return false;}
-		
 		# Get the data
 		$query = "SELECT
 			DISTINCT
 				search
-			FROM {$this->settings['database']}.{$this->settings['searchTable']}
+			FROM {$this->settings['database']}.searches
 			WHERE username__JOIN__{$this->settings['peopleDatabase']}__people__reserved = :user
 			ORDER BY id DESC
 			LIMIT {$this->settings['totalRecentSearches']}
@@ -767,9 +763,9 @@ class helpdesk extends frontControllerApplication
 				OR internalNotes LIKE '%{$searchTermEscaped}%'
 			)";
 		}
-		if ($searchTerm && $this->settings['searchTable']) {
+		if ($searchTerm) {
 			$log = array ('search' => $searchTerm, 'username__JOIN__people__people__reserved' => $this->user);
-			if (!$this->databaseConnection->insert ($this->settings['database'], $this->settings['searchTable'], $log)) {
+			if (!$this->databaseConnection->insert ($this->settings['database'], 'searches', $log)) {
 				echo $this->throwError ("There was a problem logging the helpdesk search phrase. The details were: \n\n" . print_r ($log, true), false);
 			}
 		}
