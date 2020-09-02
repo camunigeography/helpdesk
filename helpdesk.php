@@ -785,7 +785,7 @@ class helpdesk extends frontControllerApplication
 			FROM {$this->settings['table']}
 			LEFT OUTER JOIN {$this->settings['database']}.problemareas ON {$this->settings['table']}.problemarea__JOIN__{$this->settings['database']}__problemareas__reserved = problemareas.id
 			LEFT OUTER JOIN {$this->settings['peopleDatabase']}.people ON {$this->settings['table']}.username__JOIN__{$this->settings['peopleDatabase']}__people__reserved = people.username
-			WHERE " . implode (' AND ', $constraints) . ';';
+			WHERE " . implode (' AND ', $constraints);
 		
 		# End the SQL query by specifying the order
 		$listMostRecentFirst = ($this->settings['listMostRecentFirst'] && !$this->userIsAdministrator);
