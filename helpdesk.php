@@ -42,16 +42,19 @@ class helpdesk extends frontControllerApplication
 			'home' => array (
 				'description' => false,
 				'url' => '',
-				'tab' => '<img src="/images/icons/house.png" alt="" class="icon" /> Home',
+				'tab' => 'Home',
+				'icon' => 'house',
 			),
 			'report' => array (
 				'description' => 'Report a problem',
-				'tab' => '<img src="/images/icons/add.png" alt="" class="icon" /> Report a problem',
+				'tab' => 'Report a problem',
+				'icon' => 'add',
 			),
 			'calls' => array (
 				'description' => 'View/edit submitted problems',
-				'tab' => '<img src="/images/icons/application_double.png" alt="" class="icon" /> View/edit submitted problems',
 				'url' => 'calls/',
+				'tab' => 'View/edit submitted problems',
+				'icon' => 'application_double',
 			),
 			'search' => array (
 				'description' => 'Search calls',
