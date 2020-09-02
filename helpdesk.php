@@ -5,7 +5,7 @@ require_once ('frontControllerApplication.php');
 class helpdesk extends frontControllerApplication
 {
 	# Function to assign defaults additional to the general application defaults
-	function defaults ()
+	public function defaults ()
 	{
 		# Specify available arguments as defaults or as NULL (to represent a required argument)
 		$defaults = array (
@@ -35,7 +35,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Function to assign additional actions
-	function actions ()
+	public function actions ()
 	{
 		# Specify additional actions
 		$actions = array (
@@ -112,11 +112,11 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Additional initialisation
-	function main ()
+	public function main ()
 	{
 		# Force creation of administrators if none
 		if (!$this->administrators) {
-			$this->_details ();
+			$this->accountDetails ();
 			return false;
 		}
 		
@@ -124,7 +124,7 @@ class helpdesk extends frontControllerApplication
 		if ($this->action != 'api') {
 			if (!$this->userDetails = $this->userDetails ()) {
 				echo "<p>Welcome to the {$this->settings['institution']} online helpdesk system for requesting help with {$this->settings['type']} problems.</p>";
-				$this->_details ();
+				$this->accountDetails ();
 				return false;
 			}
 		}
@@ -151,7 +151,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Function to get the user details or force them to register
-	function userDetails ($user = false)
+	private function userDetails ($user = false)
 	{
 		# Default to the current user
 		if (!$user) {$user = $this->user;}
@@ -173,7 +173,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Welcome screen
-	function home ()
+	public function home ()
 	{
 		# Start the page
 		echo "\n\n" . "<p>Welcome, {$this->userDetails['forename']}, to the {$this->settings['institution']} online helpdesk system for requesting help with {$this->settings['type']} problems.</p>";
@@ -197,7 +197,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Admin screen
-	function admin ()
+	public function admin ()
 	{
 		echo "\n" . '<ul>';
 		echo "\n\t" . "<li><a href=\"{$this->baseUrl}/statistics.html\">Call statistics</a></li>";
@@ -216,7 +216,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Wrapper function to send the administrator an e-mail listing errors
-	function throwError ($errors, $visible = true, $extraInfo = false)
+	public /* public as per frontControllerApplication base class */ function throwError ($errors, $visible = true, $extraInfo = false)
 	{
 		# Ensure the errors are an array
 		$errors = application::ensureArray ($errors);
@@ -243,7 +243,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Function to allow the user to update their account details
-	function _details ($firstRun = false)
+	private function accountDetails ($firstRun = false)
 	{
 		# Introduction
 		if (!$this->administrators) {
@@ -308,7 +308,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Report problem screen
-	function report ()
+	public function report ()
 	{
 		# Show the call form
 		echo $this->reportForm ();
@@ -316,7 +316,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Report form
-	function reportForm ($editCall = false)
+	private function reportForm ($editCall = false)
 	{
 		# Start the HTML
 		$html  = '';
@@ -479,7 +479,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Function to determine the helpdesk e-mail recipients
-	function getRecipients ($exclude = false)
+	private function getRecipients ($exclude = false)
 	{
 		# Determine the recipients of the helpdesk call
 		$recipients = array ();
@@ -500,7 +500,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Function to show the number of calls
-	function showCallRate ($showHeading = true)
+	private function showCallRate ($showHeading = true)
 	{
 		# Get the number of active calls
 		$count = $this->totalCalls ();
@@ -522,7 +522,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Function to assemble a user list for administrators
-	function userList ($limitToActiveOnly = false)
+	private function userList ($limitToActiveOnly = false)
 	{
 		# Get the users
 		if (!$users = $this->databaseConnection->select ($this->settings['peopleDatabase'], 'people', ($limitToActiveOnly ? array ('active' => 'Y') : array ()), array ('username', 'title', 'forename', 'surname'))) {return false;}
@@ -541,7 +541,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Function to get the list of problem areas
-	function getProblems ()
+	private function getProblems ()
 	{
 		# Assemble a query to extract problems from the database in alphabetical order
 		$query = "SELECT
@@ -565,14 +565,14 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Wrapper function to list all calls
-	function allcalls ()
+	public function allcalls ()
 	{
 		return $this->calls (false, $limitDate = false);
 	}
 	
 	
 	# Function to search for calls
-	function search ()
+	public function search ()
 	{
 		# Process the form or end
 		if (!$result = $this->searchForm ()) {return false;}
@@ -593,7 +593,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Function to create the search form
-	function searchForm ($float = false)
+	private function searchForm ($float = false)
 	{
 		# Cache _GET and remove the action, to avoid ultimateForm thinking the form has been submitted
 		#!# This is a bit hacky, but is necessary because we set name=false in the ultimateForm constructor
@@ -645,7 +645,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Function to show recent searches
-	function recentSearches ()
+	private function recentSearches ()
 	{
 		# End if not supported
 		if (!$this->settings['searchTable']) {return false;}
@@ -677,7 +677,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Function to show a list of jobs or a single job
-	function calls ($callId = false, $limitDate = true, $searchTerm = false)
+	public function calls ($callId = false, $limitDate = true, $searchTerm = false)
 	{
 		# Ensure a supplied call number is numeric
 		if ($callId && !is_numeric ($callId)) {
@@ -818,7 +818,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Function to save the state of the heading expansion
-	function data ()
+	public function data ()
 	{
 		# Delegate to jQuery
 		require_once ('jquery.php');
@@ -828,7 +828,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Function to load jQuery
-	function loadJquery ()
+	private function loadJquery ()
 	{
 		# Load jQuery (once only)
 		if (!$this->jQueryLoaded) {
@@ -839,7 +839,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Function to produce HTML from a specified call
-	function callHtml ($call, $userHasEditRights, $editMode = false, $minimised = false)
+	private function callHtml ($call, $userHasEditRights, $editMode = false, $minimised = false)
 	{
 		# Start the HTML
 		$html  = '';
@@ -903,7 +903,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Facility to amend the problem types
-	function problemtypes ($item = false)
+	public function problemtypes ($item = false)
 	{
 		# Start the HTML
 		$html = "<p class=\"warning\">This section is not yet complete - please do not use. Instead, please make changes in the database directly.</p>";
@@ -914,7 +914,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Function to get total calls outstanding
-	function totalCalls ($limitToOutstanding = true)
+	private function totalCalls ($limitToOutstanding = true)
 	{
 		# Get the count
 		$restrictionSql = "WHERE currentStatus != 'completed' /* AND currentStatus != 'deferred' */";
@@ -926,7 +926,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Statistics screen
-	function statistics ()
+	public function statistics ()
 	{
 		# Start the HTML
 		$html  = '';
@@ -973,7 +973,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	/*
-	function barchart ($data)
+	private function barchart ($data)
 	{
 		$html  = '<table class="lines" width="100%">';
 		$max = array_sum ($data);
