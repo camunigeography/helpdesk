@@ -595,21 +595,8 @@ class helpdesk extends frontControllerApplication
 	# Function to get the list of problem areas
 	private function getProblems ()
 	{
-		# Assemble a query to extract problems from the database in alphabetical order
-		$query = "SELECT
-				id, problemarea
-			FROM {$this->settings['database']}.problemareas
-			ORDER BY listpriority
-		;";
-		
-		# Run the query and ensure that there are problems loaded
-		if (!$data = $this->databaseConnection->getData ($query)) {return false;}
-		
-		# Order the data
-		foreach ($data as $values) {
-			$key = $values['id'];
-			$problems[$key] = $values['problemarea'];
-		}
+		# Get the problems, in list priority order
+		$problems = $this->databaseConnection->selectPairs ($this->settings['database'], 'problemareas', array (), array ('id', 'problemarea'), true, 'listpriority');
 		
 		# Return the list
 		return $problems;
