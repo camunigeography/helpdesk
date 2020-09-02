@@ -1,0 +1,15 @@
+<?php
+
+# Define the settings
+$settings = array (
+	'username'		=> 'the_password',
+	'h1'			=> '<h1>IT helpdesk</h1>',
+	'institution'	=> 'Widgets',
+	'type'			=> 'computing',
+);
+
+# Run the application with the specified settings
+require_once ('helpdesk.php');
+new helpdesk ($settings);
+
+?>

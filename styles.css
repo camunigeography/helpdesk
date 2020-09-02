@@ -1,0 +1,23 @@
+
+#helpdesk h3.helpdeskcall {margin: 4em 0 0.5em 9em;}
+#helpdesk table.helpdeskcall {width: 100%; max-width: 800px;}
+#helpdesk table.helpdeskcall .key {width: 8em; text-align: right;}
+#helpdesk p.helpdeskdescription {margin-bottom: 4em;}
+#helpdesk div.helpdeskcall.editable tr.subject input, #helpdesk div.helpdeskcall.editable tr.location input, #helpdesk div.helpdeskcall.editable tr.itnumber input, #helpdesk div.helpdeskcall.editable tr.problemarea__JOIN__helpdesk__problemareas__reserved select {color: #333;}
+#helpdesk div.helpdeskcall table td *:focus {background-color: #f3f3f3;}
+#helpdesk ul.tabs li a {padding-bottom: 2px;}
+#helpdesk h2 span, #helpdesk h3 span.resolved {font-size: 10px;}
+#helpdesk p a.actions {background-color: #f7f7f7;}
+#helpdesk div.search p {padding: 0; margin: 0; position: relative; top: -12px;}
+#helpdesk div.search input, #helpdesk div.search select {font-size: 0.83em; font-family: arial, helvetica, sans-serif;}
+#helpdesk div.search input#q {margin-left: 30px; background: white url('/images/icons/magnifier.png') 2px 2px no-repeat; padding: 3px 3px 3px 20px; border: 1px solid #ccc;}
+#helpdesk table.helpdeskcall a.actions {border: 1px solid #bbb; padding: 4px 5px; background-color: #eee; line-height: 25px;}
+#helpdesk table.helpdeskcall {margin-bottom: 2em;}
+#helpdesk table.helpdeskcall.lines tr:first-child {border-top: 0;}
+#helpdesk table.helpdeskcall.lines tr:last-child td {border-bottom: 0;}
+#helpdesk table.helpdeskcall td.key {color: gray; font-style: none;}
+#helpdesk table.helpdeskcall tr.details td, #helpdesk table.helpdeskcall tr.reply td {background-color: #f7f7f7;}
+#helpdesk p.helpdeskdescription {margin-bottom: 1em;}
+#helpdesk table.lines.regulated td.key {width: 180px;}
+#helpdesk div.expandable .switch {text-align: left;}
+#helpdesk div.expandable h3 a {color: #66c;}
