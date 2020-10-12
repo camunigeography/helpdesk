@@ -432,13 +432,13 @@ class helpdesk extends frontControllerApplication
 		
 		# Define form overloading attributes; some of these are used only in editing mode, but are otherwise ignored if in submission mode
 		$attributes = array (
-			'location' => array ('description' => 'Enter n/a if not applicable',),
+			'location' => array ('description' => 'Enter n/a if not applicable', ),
 			'id' => array ('editable' => false),
-			'location' => array ('disallow' => '(http|https)://',),
+			'location' => array ('disallow' => '(http|https)://', ),
 			'details' => array ('editable' => (!$editCall || ($editCall && !$this->userIsAdministrator))),
 			// "staff__JOIN__{$this->settings['database']}__administrators__reserved" => array ('editable' => false, 'default' => $this->user),
 			#!# Support for ultimateForm->select():regexp needed
-			'currentStatus' => array ('default' => ($this->userIsAdministrator && $editCall && ($editCall['currentStatus'] == 'submitted') ? '' : $editCall['currentStatus']), 'disallow' => ($this->userIsAdministrator && $editCall ? 'submitted' : '')),	// The currentStatus is deliberately wiped so that the admin remembers to change it
+			'currentStatus' => array ('default' => ($this->userIsAdministrator && $editCall ? ($editCall['currentStatus'] == 'submitted' ? '' : $editCall['currentStatus']) : ''), 'disallow' => ($this->userIsAdministrator && $editCall ? 'submitted' : '')),	// The currentStatus is deliberately wiped so that the admin remembers to change it
 			'reply'			=> array (/*'required' => true,*/ 'description' => 'NOTE: making changes in this box will result in an e-mail being sent to the user.'),
 		);
 		if ($this->userIsAdministrator) {
