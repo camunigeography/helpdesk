@@ -155,7 +155,8 @@ class helpdesk extends frontControllerApplication
 			CREATE TABLE `categories` (
 			  `id` int PRIMARY KEY NOT NULL AUTO_INCREMENT,
 			  `category` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Category',
-			  `listpriority` DECIMAL(2,0) NOT NULL DEFAULT '0' COMMENT 'List priority (smaller numbers = earlier)'
+			  `listpriority` DECIMAL(2,0) NOT NULL DEFAULT '0' COMMENT 'List priority (smaller numbers = earlier)',
+			  `hide` TINYINT NULL DEFAULT NULL COMMENT 'Hide for new calls?'
 			) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8mb4_unicode_ci;
 			
 			-- Searches
@@ -188,7 +189,7 @@ class helpdesk extends frontControllerApplication
 		}
 		
 		# Load the list of available categories
-		if (!$this->problems = $this->getCategories ()) {
+		if (!$this->getCategories ()) {
 			echo "<p>This system is not yet set up fully. Please check back shortly.</p>";
 			if ($this->userIsAdministrator && $this->action != 'categories') {
 				echo "As a system administrator, please <a href=\"{$this->baseUrl}/categories/\">add some categories to the database</a>.";
@@ -443,8 +444,8 @@ class helpdesk extends frontControllerApplication
 		
 		# Define form overloading attributes; some of these are used only in editing mode, but are otherwise ignored if in submission mode
 		$attributes = array (
-			'subject' => array ('autofocus' => true, ),
 			'id' => array ('editable' => false),
+			'subject' => array ('autofocus' => true, ),
 			'details' => array ('editable' => (!$editCall || ($editCall && !$this->userIsAdministrator))),
 			'location' => array ('disallow' => '(http|https)://', ),
 			// "staff__JOIN__{$this->settings['database']}__administrators__reserved" => array ('editable' => false, 'default' => $this->user),
@@ -458,6 +459,10 @@ class helpdesk extends frontControllerApplication
 				$attributes["username__JOIN__{$this->settings['peopleDatabase']}__people__reserved"]['default'] = $this->user;
 			}
 		}
+		
+		# Get categories, ordered by list priority; for new calls, omit categories marked as hidden, and otherwise show all
+		$categories = $this->getCategories ($omitHidden = (!$editCall));
+		$attributes["category__JOIN__{$this->settings['database']}__categories__reserved"] = array ('values' => $categories);
 		
 		# Databind the form
 		$form->dataBinding (array (
@@ -622,10 +627,15 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Function to get the list of categories
-	private function getCategories ()
+	private function getCategories ($omitHidden = false)
 	{
+		$conditions = array ();
+		if ($omitHidden) {
+			$conditions = array ('hide' => NULL);
+		}
+		
 		# Get the problems, in list priority order
-		$problems = $this->databaseConnection->selectPairs ($this->settings['database'], 'categories', array (), array ('id', 'category'), true, 'listpriority');
+		$problems = $this->databaseConnection->selectPairs ($this->settings['database'], 'categories', $conditions, array ('id', 'category'), true, 'listpriority');
 		
 		# Return the list
 		return $problems;
@@ -1000,7 +1010,7 @@ class helpdesk extends frontControllerApplication
 		
 		# Add introduction
 		$html .= "\n<p>In this section, you can manage the available categories.</p>";
-		$html .= "\n<p>You should <strong>not</strong> delete categories in use, as this will disrupt existing submitted calls.</p>";
+		$html .= "\n<p>You should <strong>not</strong> delete categories in use, as this will disrupt existing submitted calls. Instead, mark them as hidden.</p>";
 		$html .= "\n<br />";
 		
 		# Add the editing table
@@ -1008,6 +1018,8 @@ class helpdesk extends frontControllerApplication
 			'hideSearchBox' => true,
 			'fieldFiltering' => false,
 			'hideExport' => true,
+			'int1ToCheckbox' => true,
+			'orderby' => array (__FUNCTION__ => 'listpriority'),
 		);
 		$html .= $this->editingTable (__FUNCTION__, array (), 'graybox lines', false, $sinenomineExtraSettings);
 		
