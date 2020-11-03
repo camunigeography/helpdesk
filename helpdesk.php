@@ -127,6 +127,13 @@ class helpdesk extends frontControllerApplication
 			  `state` text COLLATE utf8mb4_unicode_ci COMMENT 'Headings expanded'
 			) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8mb4_unicode_ci COMMENT='Helpdesk administrators';
 			
+			-- Settings
+			CREATE TABLE IF NOT EXISTS `settings` (
+			  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT 'Automatic key (ignored)',
+			  `homepageMessageHtml` TEXT NULL COMMENT 'Homepage message (if any)'
+			) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Settings';
+			INSERT INTO settings (id) VALUES (1);
+			
 			-- Calls
 			CREATE TABLE `calls` (
 			  `id` int PRIMARY KEY NOT NULL AUTO_INCREMENT COMMENT 'Call number',
@@ -231,6 +238,11 @@ class helpdesk extends frontControllerApplication
 		
 		# Start the page
 		$html .= "\n\n" . "<p>Welcome, {$this->userDetails['forename']}, to the {$this->settings['institution']} online helpdesk system for requesting help with {$this->settings['type']} problems.</p>";
+		
+		# Add extra message, if enabled
+		if ($this->settings['homepageMessageHtml']) {
+			$html .= "\n<br />\n" . $this->settings['homepageMessageHtml'];
+		}
 		
 		# Show current problems
 		if ($this->userIsAdministrator) {
