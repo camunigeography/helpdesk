@@ -625,7 +625,7 @@ class helpdesk extends frontControllerApplication
 	public function allcalls ()
 	{
 		# Get the list of calls
-		$html = $this->listCalls (false, $limitDate = false);
+		$html = $this->listCalls (false, $limitDate = false, false, $listMostRecentFirst = true);
 		
 		# Show the HTML
 		echo $html;
@@ -750,7 +750,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Function to show a list of jobs or a single job
-	private function listCalls ($callId = false, $limitDate = true, $searchTerm = false)
+	private function listCalls ($callId = false, $limitDate = true, $searchTerm = false, $listMostRecentFirst = false)
 	{
 		# Start the HTML
 		$html = '';
@@ -810,7 +810,7 @@ class helpdesk extends frontControllerApplication
 			WHERE " . implode (' AND ', $constraints);
 		
 		# End the SQL query by specifying the order
-		$listMostRecentFirst = ($this->settings['listMostRecentFirst'] && !$this->userIsAdministrator);
+		$listMostRecentFirst = ($listMostRecentFirst || $this->settings['listMostRecentFirst'] && !$this->userIsAdministrator);
 		$query .= ' ORDER BY id' . ($listMostRecentFirst ? ' DESC' : '') . ';';
 		
 		# Execute the query and obtain an array of problems from it; if there are none, state so
