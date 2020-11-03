@@ -24,7 +24,6 @@ class helpdesk extends frontControllerApplication
 			'authentication' => true,	// All pages require authentication
 			'cols'			=> 55,	// Size of textareas
 			'totalRecentSearches' => 7,	// Number of recent searches to display
-			'sinenomineUrl' => false,
 			'apiUsername'			=> false,		// Optional API access
 			'tabUlClass' => 'tabsflat',
 		);
@@ -73,18 +72,19 @@ class helpdesk extends frontControllerApplication
 				'parent' => 'admin',
 				'subtab' => 'Statistics',
 			),
-			'problemtypes' => array (
-				'description' => 'Problem types',
-				'url' => 'problemtypes/',
-				'administrator' => true,
-				'parent' => 'admin',
-				'subtab' => 'Problem types',
-			),
 			'data' => array (	// Used for e.g. AJAX calls, etc.
 				'description' => 'Data point',
 				'url' => 'data.html',
 				'export' => true,
 				'administrator' => true,
+			),
+			'categories' => array (
+				'description' => 'Categories',
+				'url' => 'categories/',
+				'administrator' => true,
+				'parent' => 'admin',
+				'subtab' => 'Categories',
+				'icon' => 'text_list_bullets',
 			),
 		);
 		
@@ -190,15 +190,15 @@ class helpdesk extends frontControllerApplication
 		# Load the list of available categories
 		if (!$this->problems = $this->getCategories ()) {
 			echo "<p>This system is not yet set up fully. Please check back shortly.</p>";
-			if ($this->userIsAdministrator && $this->action != 'problemtypes') {
-				echo "As a system administrator, please <a href=\"{$this->baseUrl}/problemtypes/\">add some problem types to the database</a>.";
+			if ($this->userIsAdministrator && $this->action != 'categories') {
+				echo "As a system administrator, please <a href=\"{$this->baseUrl}/categories/\">add some categories to the database</a>.";
 				return false;
 			}
 		}
 		
 		# Show the search box throughout
 		if ($this->userIsAdministrator) {
-			if (!in_array ($this->action, array ('search', 'api'))) {
+			if (!in_array ($this->action, array ('search', 'api', 'categories'))) {
 				$this->searchForm ($float = true);
 			}
 		}
@@ -274,8 +274,7 @@ class helpdesk extends frontControllerApplication
 		# Assemble the HTML
 		$html .= "\n" . '<ul>';
 		$html .= "\n\t" . "<li><a href=\"{$this->baseUrl}/statistics.html\">Call statistics</a></li>";
-		$html .= "\n\t" . "<li><a href=\"{$this->baseUrl}/problemtypes/\">Change available problem types</a></li>";
-		//$html .= "\n\t" . "<li><a href=\"{$this->settings['sinenomineUrl']}/{$this->settings['database']}/\" target=\"_blank\">Login to the underlying database system</a></li>";
+		$html .= "\n\t" . "<li><a href=\"{$this->baseUrl}/categories/\">Manage categories</a></li>";
 		$html .= "\n" . '</ul>';
 		
 		# Show the HTML
@@ -994,10 +993,23 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Facility to amend the problem types
-	public function problemtypes ($item = false)
+	public function categories ($item = false)
 	{
 		# Start the HTML
-		$html = "<p class=\"warning\">This section is not yet complete - please do not use. Instead, please make changes in the database directly.</p>";
+		$html = '';
+		
+		# Add introduction
+		$html .= "\n<p>In this section, you can manage the available categories.</p>";
+		$html .= "\n<p>You should <strong>not</strong> delete categories in use, as this will disrupt existing submitted calls.</p>";
+		$html .= "\n<br />";
+		
+		# Add the editing table
+		$sinenomineExtraSettings = array (
+			'hideSearchBox' => true,
+			'fieldFiltering' => false,
+			'hideExport' => true,
+		);
+		$html .= $this->editingTable (__FUNCTION__, array (), 'graybox lines', false, $sinenomineExtraSettings);
 		
 		# Show the HTML
 		echo $html;
