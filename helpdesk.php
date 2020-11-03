@@ -403,7 +403,7 @@ class helpdesk extends frontControllerApplication
 		));
 		
 		# Determine which fields to display; admins should also be able to set the username
-		$includeOnly = array ('subject', "problemarea__JOIN__{$this->settings['database']}__problemareas__reserved", 'location', 'building', 'room', 'itnumber', 'details', );	// Fields like location and itnumber may be installation-specific but will be ignored if not present
+		$includeOnly = array ('subject', "problemarea__JOIN__{$this->settings['database']}__problemareas__reserved", 'building', 'room', 'details', 'location', 'itnumber', );	// Fields like location and itnumber may be installation-specific but will be ignored if not present
 		if ($this->userIsAdministrator) {array_unshift ($includeOnly, "username__JOIN__{$this->settings['peopleDatabase']}__people__reserved");}
 		if ($editCall) {array_unshift ($includeOnly, 'id');}
 		
@@ -433,10 +433,9 @@ class helpdesk extends frontControllerApplication
 		# Define form overloading attributes; some of these are used only in editing mode, but are otherwise ignored if in submission mode
 		$attributes = array (
 			'subject' => array ('autofocus' => true, ),
-			'location' => array ('description' => 'Enter n/a if not applicable', ),
 			'id' => array ('editable' => false),
-			'location' => array ('disallow' => '(http|https)://', ),
 			'details' => array ('editable' => (!$editCall || ($editCall && !$this->userIsAdministrator))),
+			'location' => array ('disallow' => '(http|https)://', ),
 			// "staff__JOIN__{$this->settings['database']}__administrators__reserved" => array ('editable' => false, 'default' => $this->user),
 			#!# Support for ultimateForm->select():regexp needed
 			'currentStatus' => array ('default' => ($this->userIsAdministrator && $editCall ? ($editCall['currentStatus'] == 'submitted' ? '' : $editCall['currentStatus']) : ''), 'disallow' => ($this->userIsAdministrator && $editCall ? 'submitted' : '')),	// The currentStatus is deliberately wiped so that the admin remembers to change it
