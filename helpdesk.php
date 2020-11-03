@@ -155,7 +155,7 @@ class helpdesk extends frontControllerApplication
 			CREATE TABLE `categories` (
 			  `id` int PRIMARY KEY NOT NULL AUTO_INCREMENT,
 			  `category` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Category',
-			  `listpriority` float(3,1) NOT NULL DEFAULT '0.0' COMMENT 'List priority'
+			  `listpriority` DECIMAL(2,0) NOT NULL DEFAULT '0' COMMENT 'List priority (smaller numbers = earlier)'
 			) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8mb4_unicode_ci;
 			
 			-- Searches
