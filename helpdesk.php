@@ -396,7 +396,7 @@ class helpdesk extends frontControllerApplication
 		$form = new form (array (
 			'formCompleteText' => false,
 			'databaseConnection' => $this->databaseConnection,
-			'div' => 'ultimateform helpdeskcall' . ($editCall && $this->userIsAdministrator ? ' editable' : ''),
+			'div' => 'ultimateform horizontalonly helpdeskcall' . ($editCall && $this->userIsAdministrator ? ' editable' : ''),
 			'cols' => $this->settings['cols'],
 			'unsavedDataProtection' => true,
 			'jQuery' => false,
