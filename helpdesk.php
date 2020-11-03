@@ -621,10 +621,14 @@ class helpdesk extends frontControllerApplication
 	}
 	
 	
-	# Wrapper function to list all calls
+	# Page to list all calls
 	public function allcalls ()
 	{
-		$this->listCalls (false, $limitDate = false);
+		# Get the list of calls
+		$html = $this->listCalls (false, $limitDate = false);
+		
+		# Show the HTML
+		echo $html;
 	}
 	
 	
@@ -644,8 +648,11 @@ class helpdesk extends frontControllerApplication
 		# Determine if the call dates should be limited, i.e. if only showing unresolved items
 		$limitDate = ($result['what'] == 'unresolved');
 		
-		# Show the calls
-		$this->listCalls (false, $limitDate, $result['q']);
+		# Get the list of calls
+		$html = $this->listCalls (false, $limitDate, $result['q']);
+		
+		# Show the HTML
+		echo $html;
 	}
 	
 	
@@ -734,7 +741,11 @@ class helpdesk extends frontControllerApplication
 	# Function to show current calls of the user
 	public function calls ($callId = false, $limitDate = true, $searchTerm = false)
 	{
-		$this->listCalls ($callId, $limitDate, $searchTerm);
+		# Get the list of calls
+		$html = $this->listCalls ($callId, $limitDate, $searchTerm);
+		
+		# Show the HTML
+		echo $html;
 	}
 	
 	
@@ -746,8 +757,8 @@ class helpdesk extends frontControllerApplication
 		
 		# Ensure a supplied call number is numeric
 		if ($callId && !is_numeric ($callId)) {
-			echo "<p>Call numbers must be numeric.</p>";
-			return false;
+			$html = "\n<p class=\"warning\">Call numbers must be numeric.</p>";
+			return $html;
 		}
 		
 		# Define query limitations
@@ -776,7 +787,8 @@ class helpdesk extends frontControllerApplication
 		if ($searchTerm) {
 			$log = array ('search' => $searchTerm, 'username__JOIN__people__people__reserved' => $this->user);
 			if (!$this->databaseConnection->insert ($this->settings['database'], 'searches', $log)) {
-				echo $this->throwError ("There was a problem logging the helpdesk search phrase. The details were: \n\n" . print_r ($log, true), false);
+				$html = $this->throwError ("There was a problem logging the helpdesk search phrase. The details were: \n\n" . print_r ($log, true), false);
+				return $html;
 			}
 		}
 		
@@ -805,30 +817,32 @@ class helpdesk extends frontControllerApplication
 		#!# If there are no current calls it is impossible to get previous calls because of the 'else' block here
 		if (!$calls = $this->databaseConnection->getData ($query)) {
 			if ($callId) {
-				echo "\n<p>The call you specified is either not valid, resolved a while ago, or you do not have rights to see it.</p>";
+				$html = "\n<p>The call you specified is either not valid, resolved a while ago, or you do not have rights to see it.</p>";
 			} else {
 				if ($this->userIsAdministrator) {
 					if (strlen ($searchTerm)) {
-						echo "\n<p>No matching calls were found.</p>";
+						$html = "\n<p>No matching calls were found.</p>";
 					} else {
 						if ($this->action == 'home') {	// i.e. personal listing
-							echo "\n<p>There are no calls outstanding that you submitted for yourself.</p>";
+							$html = "\n<p>There are no calls outstanding that you submitted for yourself.</p>";
 						} else {
-							echo "\n<p>There are no {$this->settings['type']} problems outstanding." . ($this->action == 'calls' ? ' CONGRATULATIONS! Enjoy it while it lasts ...' : '') . '</p>';
+							$html = "\n<p>{$this->tick} There are no {$this->settings['type']} problems outstanding." . ($this->action == 'calls' ? ' CONGRATULATIONS! Enjoy it while it lasts ...' : '') . '</p>';
 						}
 					}
 				} else {
-					echo "\n<p>{$this->tick} You do not appear to have any logged {$this->settings['type']} problems outstanding.</p>";
+					$html = "\n<p>{$this->tick} You do not appear to have any logged {$this->settings['type']} problems outstanding.</p>";
 				}
 			}
-			return;
+			
+			# Return the HTML
+			return $html;
 		}
 		
 		# Construct the HTML
 		if ($callId) {
-			echo "\n<p><a href=\"{$this->baseUrl}/calls/" . ($this->userIsAdministrator ? "#call{$callId}" : '') . "\">&laquo; Return to the list of all calls</a></p>";
+			$html .= "\n<p><a href=\"{$this->baseUrl}/calls/" . ($this->userIsAdministrator ? "#call{$callId}" : '') . "\">&laquo; Return to the list of all calls</a></p>";
 		} else {
-			echo "\n\n" . (!$limitDate ? '<p class="helpdeskdescription">All items (' . number_format (count ($calls)) . ') ' . ($this->userIsAdministrator ? 'which have been submitted' : 'which you have submitted') . ' are listed below.' : '<p class="helpdeskdescription">Problems ' . ($this->userIsAdministrator ? '' : 'resolved within the last ' . $this->settings['completedJobExpiryDays'] . ' day' . (($this->settings['completedJobExpiryDays'] == 1) ? '' : 's') . ' or ') . 'unresolved (' . count ($calls) . ') are listed below, '. ($this->settings['listMostRecentFirst'] ? 'most recent' : 'earliest') . ' first.') . (strlen ($searchTerm) ? '' : " You can also: " . ($limitDate ? '<a href="' . $this->baseUrl . '/calls/all.html">include any older, resolved items also' : '<a href="' . $this->baseUrl . '/calls/">list only recent/unresolved items') . '</a>.') . '</p>';
+			$html .= "\n\n" . (!$limitDate ? '<p class="helpdeskdescription">All items (' . number_format (count ($calls)) . ') ' . ($this->userIsAdministrator ? 'which have been submitted' : 'which you have submitted') . ' are listed below.' : '<p class="helpdeskdescription">Problems ' . ($this->userIsAdministrator ? '' : 'resolved within the last ' . $this->settings['completedJobExpiryDays'] . ' day' . (($this->settings['completedJobExpiryDays'] == 1) ? '' : 's') . ' or ') . 'unresolved (' . count ($calls) . ') are listed below, '. ($this->settings['listMostRecentFirst'] ? 'most recent' : 'earliest') . ' first.') . (strlen ($searchTerm) ? '' : " You can also: " . ($limitDate ? '<a href="' . $this->baseUrl . '/calls/all.html">include any older, resolved items also' : '<a href="' . $this->baseUrl . '/calls/">list only recent/unresolved items') . '</a>.') . '</p>';
 		}
 		
 		# Determine whether this is the listing mode (i.e. calls page for admins only)
@@ -857,7 +871,7 @@ class helpdesk extends frontControllerApplication
 		
 		# If not the single call screen, do expansion of headings using jQuery
 		if ($callId) {
-			$html = implode ($panels);
+			$html .= implode ($panels);
 		} else {
 			
 			# Determine the items to expand
@@ -870,15 +884,15 @@ class helpdesk extends frontControllerApplication
 			require_once ('jquery.php');
 			$jQuery = new jQuery ($this->databaseConnection, "{$this->baseUrl}/data.html", $_SERVER['REMOTE_USER']);
 			$jQuery->expandable ($panels, $expandState, $saveState);
-			$html  = $jQuery->getHtml ();
+			$html .= $jQuery->getHtml ();
 			
 			# Stop jQuery being reloaded
 			#!# Bit hacky this
 			$this->jQueryLoaded = true;
 		}
 		
-		# Show the HTML
-		echo $html;
+		# Return the HTML
+		return $html;
 	}
 	
 	
@@ -1098,7 +1112,7 @@ class helpdesk extends frontControllerApplication
 		
 		# List calls
 		#!# Not yet implemented
-		// $calls = $this->listCalls (false);
+		// $html .= $this->listCalls (false);
 		
 		# Register the HTML
 		$data['html'] = $html;
