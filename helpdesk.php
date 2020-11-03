@@ -432,6 +432,7 @@ class helpdesk extends frontControllerApplication
 		
 		# Define form overloading attributes; some of these are used only in editing mode, but are otherwise ignored if in submission mode
 		$attributes = array (
+			'subject' => array ('autofocus' => true, ),
 			'location' => array ('description' => 'Enter n/a if not applicable', ),
 			'id' => array ('editable' => false),
 			'location' => array ('disallow' => '(http|https)://', ),
