@@ -242,7 +242,7 @@ class helpdesk extends frontControllerApplication
 		# Show my current calls
 		$html .= "\n<h2>My current/recent problems</h2>";
 		$html .= $this->showCallRate (false);
-		$html .= $this->calls (false);
+		$html .= $this->listCalls (false);
 		
 		# Show the reporting screen
 		$html .= "\n<h2>Report a new problem</h2>";
@@ -624,7 +624,7 @@ class helpdesk extends frontControllerApplication
 	# Wrapper function to list all calls
 	public function allcalls ()
 	{
-		return $this->calls (false, $limitDate = false);
+		$this->listCalls (false, $limitDate = false);
 	}
 	
 	
@@ -645,7 +645,7 @@ class helpdesk extends frontControllerApplication
 		$limitDate = ($result['what'] == 'unresolved');
 		
 		# Show the calls
-		$this->calls (false, $limitDate, $result['q']);
+		$this->listCalls (false, $limitDate, $result['q']);
 	}
 	
 	
@@ -731,9 +731,19 @@ class helpdesk extends frontControllerApplication
 	}
 	
 	
-	# Function to show a list of jobs or a single job
+	# Function to show current calls of the user
 	public function calls ($callId = false, $limitDate = true, $searchTerm = false)
 	{
+		$this->listCalls ($callId, $limitDate, $searchTerm);
+	}
+	
+	
+	# Function to show a list of jobs or a single job
+	private function listCalls ($callId = false, $limitDate = true, $searchTerm = false)
+	{
+		# Start the HTML
+		$html = '';
+		
 		# Ensure a supplied call number is numeric
 		if ($callId && !is_numeric ($callId)) {
 			echo "<p>Call numbers must be numeric.</p>";
@@ -1088,7 +1098,7 @@ class helpdesk extends frontControllerApplication
 		
 		# List calls
 		#!# Not yet implemented
-		// $calls = $this->calls (false);
+		// $calls = $this->listCalls (false);
 		
 		# Register the HTML
 		$data['html'] = $html;
