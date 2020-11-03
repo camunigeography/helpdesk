@@ -139,7 +139,7 @@ class helpdesk extends frontControllerApplication
 			  `id` int PRIMARY KEY NOT NULL AUTO_INCREMENT COMMENT 'Call number',
 			  `subject` varchar(60) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Subject',
 			  `username__JOIN__people__people__reserved` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'User',
-			  `problemarea__JOIN__helpdesk__problemareas__reserved` int NOT NULL COMMENT 'Category of problem',
+			  `category__JOIN__helpdesk__categories__reserved` int NOT NULL COMMENT 'Category of problem',
 			  `details` text COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Details of problem, or describe what you did',
 			  `timeSubmitted` datetime NOT NULL,
 			  `lastUpdated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Time this call was last updated (or created)',
@@ -151,11 +151,11 @@ class helpdesk extends frontControllerApplication
 			  `internalNotes` text COLLATE utf8mb4_unicode_ci
 			) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8mb4_unicode_ci;
 			
-			-- Problem areas
-			CREATE TABLE `problemareas` (
+			-- Categories
+			CREATE TABLE `categories` (
 			  `id` int PRIMARY KEY NOT NULL AUTO_INCREMENT,
-			  `problemarea` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-			  `listpriority` float(3,1) NOT NULL DEFAULT '0.0'
+			  `category` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Category',
+			  `listpriority` float(3,1) NOT NULL DEFAULT '0.0' COMMENT 'List priority'
 			) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8mb4_unicode_ci;
 			
 			-- Searches
@@ -187,8 +187,8 @@ class helpdesk extends frontControllerApplication
 			}
 		}
 		
-		# Load the list of available problems
-		if (!$this->problems = $this->getProblems ()) {
+		# Load the list of available categories
+		if (!$this->problems = $this->getCategories ()) {
 			echo "<p>This system is not yet set up fully. Please check back shortly.</p>";
 			if ($this->userIsAdministrator && $this->action != 'problemtypes') {
 				echo "As a system administrator, please <a href=\"{$this->baseUrl}/problemtypes/\">add some problem types to the database</a>.";
@@ -415,7 +415,7 @@ class helpdesk extends frontControllerApplication
 		));
 		
 		# Determine which fields to display; admins should also be able to set the username
-		$includeOnly = array ('subject', "problemarea__JOIN__{$this->settings['database']}__problemareas__reserved", 'building', 'room', 'details', 'location', 'itnumber', );	// Fields like location and itnumber may be installation-specific but will be ignored if not present
+		$includeOnly = array ('subject', "category__JOIN__{$this->settings['database']}__categories__reserved", 'building', 'room', 'details', 'location', 'itnumber', );	// Fields like location and itnumber may be installation-specific but will be ignored if not present
 		if ($this->userIsAdministrator) {array_unshift ($includeOnly, "username__JOIN__{$this->settings['peopleDatabase']}__people__reserved");}
 		if ($editCall) {array_unshift ($includeOnly, 'id');}
 		
@@ -622,11 +622,11 @@ class helpdesk extends frontControllerApplication
 	}
 	
 	
-	# Function to get the list of problem areas
-	private function getProblems ()
+	# Function to get the list of categories
+	private function getCategories ()
 	{
 		# Get the problems, in list priority order
-		$problems = $this->databaseConnection->selectPairs ($this->settings['database'], 'problemareas', array (), array ('id', 'problemarea'), true, 'listpriority');
+		$problems = $this->databaseConnection->selectPairs ($this->settings['database'], 'categories', array (), array ('id', 'category'), true, 'listpriority');
 		
 		# Return the list
 		return $problems;
@@ -789,7 +789,7 @@ class helpdesk extends frontControllerApplication
 				OR people.forename LIKE '%{$searchTermEscaped}%'
 				OR people.surname LIKE '%{$searchTermEscaped}%'
 				/* OR location LIKE '%{$searchTermEscaped}%' */
-				OR problemarea LIKE '%{$searchTermEscaped}%'
+				OR category LIKE '%{$searchTermEscaped}%'
 				/* OR itnumber LIKE '%{$searchTermEscaped}%' */
 				OR details LIKE '%{$searchTermEscaped}%'
 				OR reply LIKE '%{$searchTermEscaped}%'
@@ -814,10 +814,10 @@ class helpdesk extends frontControllerApplication
 		
 		# Assemble the SQL query
 		$query = "SELECT
-				{$this->settings['table']}.id, subject, currentStatus, timeSubmitted, timeCompleted, problemarea {$locationFields}, details, reply, internalNotes, CONCAT(people.forename,' ',people.surname,' <',people.username,'>') as user,
+				{$this->settings['table']}.id, subject, currentStatus, timeSubmitted, timeCompleted, category {$locationFields}, details, reply, internalNotes, CONCAT(people.forename,' ',people.surname,' <',people.username,'>') as user,
 				CONCAT(DATE_FORMAT(CAST(timeSubmitted AS DATE), '%e/'), SUBSTRING(DATE_FORMAT(CAST(timeSubmitted AS DATE), '%M'), 1, 3), DATE_FORMAT(CAST(timeSubmitted AS DATE), '/%y')) AS formattedDate
 			FROM {$this->settings['table']}
-			LEFT OUTER JOIN {$this->settings['database']}.problemareas ON {$this->settings['table']}.problemarea__JOIN__{$this->settings['database']}__problemareas__reserved = problemareas.id
+			LEFT OUTER JOIN {$this->settings['database']}.categories ON {$this->settings['table']}.category__JOIN__{$this->settings['database']}__categories__reserved = categories.id
 			LEFT OUTER JOIN {$this->settings['peopleDatabase']}.people ON {$this->settings['table']}.username__JOIN__{$this->settings['peopleDatabase']}__people__reserved = people.username
 			WHERE " . implode (' AND ', $constraints);
 		
@@ -971,7 +971,7 @@ class helpdesk extends frontControllerApplication
 		$table['details'] = application::makeClickableLinks ($call['details']);
 		if (isSet ($call['building'])) {$table['building'] = $call['building'];}
 		if (isSet ($call['room'])) {$table['room'] = $call['room'];}
-		$table['problemarea'] = $call['problemarea'];
+		$table['category'] = $call['category'];
 		$table['currentStatus'] =  $call['currentStatus'];
 		$table['reply'] = application::makeClickableLinks ($call['reply']);
 		
@@ -980,7 +980,7 @@ class helpdesk extends frontControllerApplication
 			'building'		=> 'Building:',
 			'room'			=> 'Room:',
 			'details'		=> ($userHasEditRights ? "<a class=\"actions\" href=\"{$this->baseUrl}/calls/{$call['id']}/\"><img src=\"/images/icons/pencil.png\" alt=\"\" class=\"icon\" /> <strong>Edit</strong></a>" : ''),
-			'problemarea'	=> 'Category:',
+			'category'		=> 'Category:',
 			'currentStatus'	=> 'Current status:',
 			'reply'			=> "Reply from {$this->settings['type']} staff:",
 		);
@@ -1038,11 +1038,11 @@ class helpdesk extends frontControllerApplication
 		}
 		
 		# Problem areas
-		$query = "SELECT {$this->settings['database']}.problemareas.problemarea as 'Problem area', COUNT(*) as Total
-			FROM {$this->settings['database']}.{$this->settings['table']},{$this->settings['database']}.problemareas
-			WHERE {$this->settings['database']}.{$this->settings['table']}.problemarea__JOIN__{$this->settings['database']}__problemareas__reserved = {$this->settings['database']}.problemareas.id
-			GROUP BY problemarea
-			ORDER BY Total DESC,problemarea
+		$query = "SELECT {$this->settings['database']}.categories.category as 'Problem area', COUNT(*) as Total
+			FROM {$this->settings['database']}.{$this->settings['table']},{$this->settings['database']}.categories
+			WHERE {$this->settings['database']}.{$this->settings['table']}.category__JOIN__{$this->settings['database']}__categories__reserved = {$this->settings['database']}.categories.id
+			GROUP BY category
+			ORDER BY Total DESC,category
 		;";
 		if ($data = $this->databaseConnection->getData ($query)) {
 			$html .= "\n<h3>Problem areas:</h3>";
