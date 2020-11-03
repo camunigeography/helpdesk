@@ -808,7 +808,7 @@ class helpdesk extends frontControllerApplication
 						}
 					}
 				} else {
-					echo "\n<p>You do not appear to have any logged {$this->settings['type']} problems outstanding. If this is not the case, please contact the {$this->settings['type']} staff.</p>";
+					echo "\n<p>{$this->tick} You do not appear to have any logged {$this->settings['type']} problems outstanding.</p>";
 				}
 			}
 			return;
