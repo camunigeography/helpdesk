@@ -121,7 +121,7 @@ class helpdesk extends frontControllerApplication
 			
 			-- Administrators
 			CREATE TABLE `administrators` (
-			  `username` varchar(191) COLLATE utf8mb4_unicode_ci PRIMARY KEY NOT NULL COMMENT 'Username',
+			  `id` varchar(191) COLLATE utf8mb4_unicode_ci PRIMARY KEY NOT NULL COMMENT 'Username',
 			  `active` enum('','Yes','No') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Yes' COMMENT 'Currently active?',
 			  `receiveHelpdeskEmail` enum('Yes','No') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Yes',
 			  `state` text COLLATE utf8mb4_unicode_ci COMMENT 'Headings expanded'
@@ -139,11 +139,11 @@ class helpdesk extends frontControllerApplication
 			  `id` int PRIMARY KEY NOT NULL AUTO_INCREMENT COMMENT 'Call number',
 			  `subject` varchar(60) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Subject',
 			  `username` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'User',
-			  `category__JOIN__helpdesk__categories__reserved` int NOT NULL COMMENT 'Category of problem',
+			  `categoryId` int NOT NULL COMMENT 'Category of problem',
 			  `details` text COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Details of problem, or describe what you did',
 			  `timeSubmitted` datetime NOT NULL,
 			  `lastUpdated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Time this call was last updated (or created)',
-			  `staff__JOIN__helpdesk__administrators__reserved` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+			  `administratorId` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Staff',
 			  `currentStatus` enum('submitted','timetabled','researching','completed','deferred') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'submitted' COMMENT 'Status',
 			  `reply` text COLLATE utf8mb4_unicode_ci NOT NULL,
 			  `timeOpened` datetime DEFAULT NULL,
@@ -374,7 +374,7 @@ class helpdesk extends frontControllerApplication
 		
 		# Insert the new person in the administrators database if necessary
 		if (!$this->administrators) {
-			if (!$this->databaseConnection->insert ($this->settings['database'], 'administrators', array ('username' => $result['username']))) {
+			if (!$this->databaseConnection->insert ($this->settings['database'], 'administrators', array ('id' => $result['username']))) {
 				echo $this->throwError ('There was a problem inserting the new administrator into the administators database.');
 				return false;
 			}
@@ -415,7 +415,7 @@ class helpdesk extends frontControllerApplication
 		));
 		
 		# Determine which fields to display; admins should also be able to set the username
-		$includeOnly = array ('subject', "category__JOIN__{$this->settings['database']}__categories__reserved", 'building', 'room', 'details', 'location', 'itnumber', );	// Fields like location and itnumber may be installation-specific but will be ignored if not present
+		$includeOnly = array ('subject', 'categoryId', 'building', 'room', 'details', 'location', 'itnumber', );	// Fields like location and itnumber may be installation-specific but will be ignored if not present
 		if ($this->userIsAdministrator) {array_unshift ($includeOnly, 'username');}
 		if ($editCall) {array_unshift ($includeOnly, 'id');}
 		
@@ -437,8 +437,8 @@ class helpdesk extends frontControllerApplication
 				$result = $this->databaseConnection->update ($this->settings['database'], $this->settings['table'], $data = array ('timeOpened' => 'NOW()'), $conditions = array ('id' => $editCall['id']));
 			}
 			
-			if (!$editCall["staff__JOIN__{$this->settings['database']}__administrators__reserved"]) {
-				$editCall["staff__JOIN__{$this->settings['database']}__administrators__reserved"] = $this->user;
+			if (!$editCall['administratorId']) {
+				$editCall['administratorId'] = $this->user;
 			}
 		}
 		
@@ -448,7 +448,7 @@ class helpdesk extends frontControllerApplication
 			'subject' => array ('autofocus' => true, ),
 			'details' => array ('editable' => (!$editCall || ($editCall && !$this->userIsAdministrator))),
 			'location' => array ('disallow' => '(http|https)://', ),
-			// "staff__JOIN__{$this->settings['database']}__administrators__reserved" => array ('editable' => false, 'default' => $this->user),
+			// 'administratorId' => array ('editable' => false, 'default' => $this->user),
 			#!# Support for ultimateForm->select():regexp needed
 			'currentStatus' => array ('default' => ($this->userIsAdministrator && $editCall ? ($editCall['currentStatus'] == 'submitted' ? '' : $editCall['currentStatus']) : ''), 'disallow' => ($this->userIsAdministrator && $editCall ? 'submitted' : '')),	// The currentStatus is deliberately wiped so that the admin remembers to change it
 			'reply'			=> array (/*'required' => true,*/ 'description' => 'NOTE: making changes in this box will result in an e-mail being sent to the user.'),
@@ -467,7 +467,7 @@ class helpdesk extends frontControllerApplication
 		
 		# Get categories, ordered by list priority; for new calls, omit categories marked as hidden, and otherwise show all
 		$categories = $this->getCategories ($omitHidden = (!$editCall));
-		$attributes["category__JOIN__{$this->settings['database']}__categories__reserved"] = array ('values' => $categories);
+		$attributes['categoryId'] = array ('values' => $categories);
 		
 		# Databind the form
 		$form->dataBinding (array (
@@ -479,6 +479,7 @@ class helpdesk extends frontControllerApplication
 			'exclude' => $exclude,
 			'attributes' => $attributes,
 			'data' => $editCall,	// Will either be false (i.e. submission mode) or contain the data (i.e. editing mode)
+			'simpleJoin' => true,
 		));
 		if ($editCall) {
 			$form->input (array (
@@ -510,7 +511,7 @@ class helpdesk extends frontControllerApplication
 		
 		# Add default values
 		if (!$editCall) {
-			$result["staff__JOIN__{$this->settings['database']}__administrators__reserved"] = '';
+			$result['administratorId'] = '';
 			$result['reply'] = '';
 		}
 		
@@ -790,7 +791,7 @@ class helpdesk extends frontControllerApplication
 		# Define query limitations
 		$constraints = array ('1=1');
 		if ($callId) {$constraints[] = "{$this->settings['table']}.id = '$callId'";}
-		if (!$this->userIsAdministrator || $this->action == 'home') {$constraints[] = "username = '{$this->user}'";}
+		if (!$this->userIsAdministrator || $this->action == 'home') {$constraints[] = "calls.username = '{$this->user}'";}
 		if ($limitDate && !$callId) {$constraints[] = "(currentStatus != 'completed'" . (!$callId && $this->userIsAdministrator ? ')' : " OR ((UNIX_TIMESTAMP(NOW()) - UNIX_TIMESTAMP(timeCompleted) < " . ($this->settings['completedJobExpiryDays'] *  24 * 60 * 60) . ") AND currentStatus = 'completed'))");}
 		
 		# Deal with searches, and insert the search into the database
@@ -831,7 +832,7 @@ class helpdesk extends frontControllerApplication
 				{$this->settings['table']}.id, subject, currentStatus, timeSubmitted, timeCompleted, category {$locationFields}, details, reply, internalNotes, CONCAT(people.forename,' ',people.surname,' <',people.username,'>') as user,
 				CONCAT(DATE_FORMAT(CAST(timeSubmitted AS DATE), '%e/'), SUBSTRING(DATE_FORMAT(CAST(timeSubmitted AS DATE), '%M'), 1, 3), DATE_FORMAT(CAST(timeSubmitted AS DATE), '/%y')) AS formattedDate
 			FROM {$this->settings['table']}
-			LEFT OUTER JOIN {$this->settings['database']}.categories ON {$this->settings['table']}.category__JOIN__{$this->settings['database']}__categories__reserved = categories.id
+			LEFT OUTER JOIN {$this->settings['database']}.categories ON {$this->settings['table']}.categoryId = categories.id
 			LEFT OUTER JOIN {$this->settings['peopleDatabase']}.people ON {$this->settings['table']}.username = people.username
 			WHERE " . implode (' AND ', $constraints);
 		
@@ -928,7 +929,7 @@ class helpdesk extends frontControllerApplication
 		# Delegate to jQuery
 		require_once ('jquery.php');
 		$jQuery = new jQuery ($this->databaseConnection, "{$this->baseUrl}/data.html", $_SERVER['REMOTE_USER']);
-		return $jQuery->expandable_data ($this->settings['database'], 'administrators', 'username');
+		return $jQuery->expandable_data ($this->settings['database'], 'administrators', 'id');
 	}
 	
 	
@@ -1069,7 +1070,7 @@ class helpdesk extends frontControllerApplication
 		# Problem areas
 		$query = "SELECT {$this->settings['database']}.categories.category as 'Problem area', COUNT(*) as Total
 			FROM {$this->settings['database']}.{$this->settings['table']},{$this->settings['database']}.categories
-			WHERE {$this->settings['database']}.{$this->settings['table']}.category__JOIN__{$this->settings['database']}__categories__reserved = {$this->settings['database']}.categories.id
+			WHERE {$this->settings['database']}.{$this->settings['table']}.categoryId = {$this->settings['database']}.categories.id
 			GROUP BY category
 			ORDER BY Total DESC,category
 		;";
