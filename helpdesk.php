@@ -199,7 +199,7 @@ class helpdesk extends frontControllerApplication
 		
 		# Show the search box throughout
 		if ($this->userIsAdministrator) {
-			if (!in_array ($this->action, array ('search', 'api', 'categories'))) {
+			if (!in_array ($this->action, array ('search', 'api', 'data', 'categories'))) {
 				$this->searchForm ($float = true);
 			}
 		}
