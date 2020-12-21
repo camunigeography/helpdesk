@@ -21,3 +21,4 @@
 #helpdesk table.lines.regulated td.key {width: 180px;}
 #helpdesk div.expandable .switch {text-align: left;}
 #helpdesk div.expandable h3 a {color: #66c;}
+#helpdesk div.helpdeskcall table .title {max-width: 20em;}
