@@ -141,6 +141,7 @@ class helpdesk extends frontControllerApplication
 			  `username` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'User',
 			  `categoryId` int NOT NULL COMMENT 'Category of problem',
 			  `details` text COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Details of problem, or describe what you did',
+			  `imageFile` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Optional image (e.g. screenshot)',
 			  `timeSubmitted` datetime NOT NULL,
 			  `lastUpdated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Time this call was last updated (or created)',
 			  `administratorId` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Staff',
@@ -412,10 +413,13 @@ class helpdesk extends frontControllerApplication
 			'cols' => $this->settings['cols'],
 			'unsavedDataProtection' => true,
 			'jQuery' => false,
+			'uploadThumbnailWidth' => ($editCall ? 300 : 300),
+			'uploadThumbnailHeight' => ($editCall ? 300 : 80),
+			'displayRestrictions' => false,
 		));
 		
 		# Determine which fields to display; admins should also be able to set the username
-		$includeOnly = array ('subject', 'categoryId', 'building', 'room', 'details', 'location', 'itnumber', );	// Fields like location and itnumber may be installation-specific but will be ignored if not present
+		$includeOnly = array ('subject', 'categoryId', 'building', 'room', 'details', 'imageFile', 'location', 'itnumber', );	// Fields like location and itnumber may be installation-specific but will be ignored if not present
 		if ($this->userIsAdministrator) {array_unshift ($includeOnly, 'username');}
 		if ($editCall) {array_unshift ($includeOnly, 'id');}
 		
@@ -452,6 +456,7 @@ class helpdesk extends frontControllerApplication
 			#!# Support for ultimateForm->select():regexp needed
 			'currentStatus' => array ('default' => ($this->userIsAdministrator && $editCall ? ($editCall['currentStatus'] == 'submitted' ? '' : $editCall['currentStatus']) : ''), 'disallow' => ($this->userIsAdministrator && $editCall ? 'submitted' : '')),	// The currentStatus is deliberately wiped so that the admin remembers to change it
 			'reply'			=> array (/*'required' => true,*/ 'description' => 'NOTE: making changes in this box will result in an e-mail being sent to the user.'),
+			'imageFile' => array ('name' => 'image', 'title' => 'Optional image (e.g. screenshot)', 'directory' => $_SERVER['DOCUMENT_ROOT'] . $this->baseUrl . '/images/', 'forcedFileName' => application::generatePassword (8, false), 'allowedExtensions' => array ('jpg', 'jpeg', 'png', 'gif'), 'lowercaseExtension' => true, 'required' => false, 'thumbnail' => true, 'flatten' => true, 'editable' => (!$editCall), 'previewLocationPrefix' => "{$this->baseUrl}/images/", 'thumbnailExpandable' => true, ),
 		);
 		if ($this->userIsAdministrator) {
 			$attributes['username'] = array (
@@ -480,6 +485,7 @@ class helpdesk extends frontControllerApplication
 			'attributes' => $attributes,
 			'data' => $editCall,	// Will either be false (i.e. submission mode) or contain the data (i.e. editing mode)
 			'simpleJoin' => true,
+			'intelligence' => true,
 		));
 		if ($editCall) {
 			$form->input (array (
@@ -515,6 +521,13 @@ class helpdesk extends frontControllerApplication
 			$result['reply'] = '';
 		}
 		
+		# Obtain the image filename
+		$image = false;
+		if (!$editCall) {
+			$image = $result['image'];
+			unset ($result['image']);
+		}
+		
 		# Insert the new call
 		$function = ($editCall ? 'update' : 'insert');
 		if (!$this->databaseConnection->$function ($this->settings['database'], $this->settings['table'], $result, ($editCall ? array ('id' => $result['id']) : false), $emptyToNull = false)) {
@@ -531,6 +544,16 @@ class helpdesk extends frontControllerApplication
 		
 		# Determine the call number
 		$callId = ($editCall ? $result['id'] : $this->databaseConnection->getLatestId ());
+		
+		# Move the image to its final URL
+		if ($image) {
+			$extension = pathinfo ($image, PATHINFO_EXTENSION);
+			$imageFileOriginal = $_SERVER['DOCUMENT_ROOT'] . $this->baseUrl . '/images/' . $image;
+			$imageFilenameNew = $callId . '-1' . '.' . $extension;		// e.g. 122-1.png for call #122
+			$imageFileNew   = $_SERVER['DOCUMENT_ROOT'] . $this->baseUrl . '/images/' . $imageFilenameNew;
+			rename ($imageFileOriginal, $imageFileNew);
+			$this->databaseConnection->update ($this->settings['database'], $this->settings['table'], array ('imageFile' => $imageFilenameNew), array ('id' => $callId));
+		}
 		
 		# Determine the call administration URL
 		$callDetailsUrl = $_SERVER['_SITE_URL'] . $this->baseUrl . "/calls/{$callId}/";
@@ -725,13 +748,14 @@ class helpdesk extends frontControllerApplication
 			'required'	=> true,
 			'nullRequiredDefault' => false,
 		));
+		$result = $form->process ();
 		
-		# Reinstate GET
+		# Reinstate _GET
 		$_GET = $get;
 		unset ($get);
 		
 		# Return the result
-		return $result = $form->process ();
+		return $result;
 	}
 	
 	
