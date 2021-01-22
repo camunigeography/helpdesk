@@ -824,7 +824,7 @@ class helpdesk extends frontControllerApplication
 			$constraints[] = "
 			(	   subject LIKE '%{$searchTermEscaped}%'
 				OR calls.id = '{$searchTermEscaped}'
-				OR username LIKE '%{$searchTermEscaped}%'
+				OR calls.username LIKE '%{$searchTermEscaped}%'
 				OR people.forename LIKE '%{$searchTermEscaped}%'
 				OR people.surname LIKE '%{$searchTermEscaped}%'
 				/* OR location LIKE '%{$searchTermEscaped}%' */
