@@ -125,7 +125,7 @@ class helpdesk extends frontControllerApplication
 			  `active` enum('','Yes','No') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Yes' COMMENT 'Currently active?',
 			  `receiveHelpdeskEmail` enum('Yes','No') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Yes',
 			  `state` text COLLATE utf8mb4_unicode_ci COMMENT 'Headings expanded'
-			) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8mb4_unicode_ci COMMENT='Helpdesk administrators';
+			) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Helpdesk administrators';
 			
 			-- Settings
 			CREATE TABLE IF NOT EXISTS `settings` (
@@ -150,7 +150,7 @@ class helpdesk extends frontControllerApplication
 			  `timeOpened` datetime DEFAULT NULL,
 			  `timeCompleted` datetime DEFAULT NULL,
 			  `internalNotes` text COLLATE utf8mb4_unicode_ci
-			) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8mb4_unicode_ci;
+			) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 			
 			-- Categories
 			CREATE TABLE `categories` (
@@ -158,7 +158,7 @@ class helpdesk extends frontControllerApplication
 			  `category` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Category',
 			  `listpriority` DECIMAL(2,0) NOT NULL DEFAULT '0' COMMENT 'List priority (smaller numbers = earlier)',
 			  `hide` TINYINT NULL DEFAULT NULL COMMENT 'Hide for new calls?'
-			) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8mb4_unicode_ci;
+			) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 			
 			-- Searches
 			CREATE TABLE `searches` (
@@ -166,7 +166,7 @@ class helpdesk extends frontControllerApplication
 			  `search` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Search phrase',
 			  `username` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Username',
 			  `datetime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Automatic timestamp'
-			) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8mb4_unicode_ci COMMENT='Table of searches';
+			) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Table of searches';
 		";
 	}
 	
