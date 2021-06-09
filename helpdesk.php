@@ -456,7 +456,7 @@ class helpdesk extends frontControllerApplication
 			#!# Support for ultimateForm->select():regexp needed
 			'currentStatus' => array ('default' => ($this->userIsAdministrator && $editCall ? ($editCall['currentStatus'] == 'submitted' ? '' : $editCall['currentStatus']) : ''), 'disallow' => ($this->userIsAdministrator && $editCall ? 'submitted' : '')),	// The currentStatus is deliberately wiped so that the admin remembers to change it
 			'reply'			=> array (/*'required' => true,*/ 'description' => 'NOTE: making changes in this box will result in an e-mail being sent to the user.'),
-			'imageFile' => array ('name' => 'image', 'title' => 'Optional image (e.g. screenshot)', 'directory' => $_SERVER['DOCUMENT_ROOT'] . $this->baseUrl . '/images/', 'forcedFileName' => application::generatePassword (8, false), 'allowedExtensions' => array ('jpg', 'jpeg', 'png', 'gif'), 'lowercaseExtension' => true, 'required' => false, 'thumbnail' => true, 'flatten' => true, 'editable' => (!$editCall), 'previewLocationPrefix' => "{$this->baseUrl}/images/", 'thumbnailExpandable' => true, ),
+			'imageFile' => array ('directory' => $_SERVER['DOCUMENT_ROOT'] . $this->baseUrl . '/images/', 'forcedFileName' => application::generatePassword (8, false), 'allowedExtensions' => array ('jpg', 'jpeg', 'png', 'gif'), 'lowercaseExtension' => true, 'required' => false, 'thumbnail' => true, 'flatten' => true, 'editable' => (!$editCall), 'previewLocationPrefix' => "{$this->baseUrl}/images/", 'thumbnailExpandable' => true, ),
 		);
 		if ($this->userIsAdministrator) {
 			$attributes['username'] = array (
@@ -524,8 +524,8 @@ class helpdesk extends frontControllerApplication
 		# Obtain the image filename
 		$image = false;
 		if (!$editCall) {
-			$image = $result['image'];
-			unset ($result['image']);
+			$image = $result['imageFile'];
+			unset ($result['imageFile']);
 		}
 		
 		# Insert the new call
