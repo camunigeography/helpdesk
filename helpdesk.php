@@ -264,7 +264,7 @@ class helpdesk extends frontControllerApplication
 		if (!$calls = $this->getCalls ()) {
 			$html .= "\n<p>{$this->tick} You do not appear to have any logged {$this->settings['type']} problems outstanding" . ($this->userIsAdministrator ? '  that you submitted for yourself' : '') . '.</p>';
 		} else {
-			$html .= $this->renderCalls ($calls);
+			$html .= $this->renderCallsList ($calls);
 		}
 		
 		# Show the reporting screen
@@ -686,8 +686,8 @@ class helpdesk extends frontControllerApplication
 		# Get the list of calls
 		$calls = $this->getCalls (false, $limitDate = false, false, $listMostRecentFirst = true);
 		
-		# Render the calls
-		$html = $this->renderCalls ($calls, $limitDate = false, false);
+		# Render the calls list
+		$html = $this->renderCallsList ($calls, $limitDate = false, false);
 		
 		# Show the HTML
 		echo $html;
@@ -728,8 +728,8 @@ class helpdesk extends frontControllerApplication
 			return false;
 		}
 		
-		# Render the calls
-		$html = $this->renderCalls ($calls, $limitDate, $searchTerm);
+		# Render the calls list
+		$html = $this->renderCallsList ($calls, $limitDate, $searchTerm);
 		
 		# Show the HTML
 		echo $html;
@@ -825,8 +825,8 @@ class helpdesk extends frontControllerApplication
 		# Get the calls
 		$calls = $this->getCalls ();
 		
-		# Render the calls
-		$html = $this->renderCalls ($calls);
+		# Render the calls list
+		$html = $this->renderCallsList ($calls);
 		
 		# Show the HTML
 		echo $html;
@@ -866,13 +866,12 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Function to show a list of calls
-	private function renderCalls ($calls, $limitDate = true, $searchTerm = false)
+	private function renderCallsList ($calls, $limitDate = true, $searchTerm = false)
 	{
 		# Start the HTML
 		$html = '';
 		
 		# End, with message, if no calls
-		#!# If there are no current calls it is impossible to get previous calls because of the 'else' block here
 		if (!$calls) {
 			if ($this->userIsAdministrator) {
 				$html = "\n<p>{$this->tick} There are no {$this->settings['type']} problems outstanding." . ($this->action == 'calls' ? ' CONGRATULATIONS! Enjoy it while it lasts ...' : '') . '</p>';
