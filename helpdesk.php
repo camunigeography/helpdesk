@@ -530,32 +530,19 @@ class helpdesk extends frontControllerApplication
 			$result['reply'] = '';
 		}
 		
-		# Obtain the image filename
-		$image = false;
-		if (!$editCall) {
-			$image = $result['imageFile'];
-			unset ($result['imageFile']);
-		}
-		
-		# Insert the new call
-		$function = ($editCall ? 'update' : 'insert');
-		if (!$this->databaseConnection->$function ($this->settings['database'], $this->settings['table'], $result, ($editCall ? array ('id' => $result['id']) : false), $emptyToNull = false)) {
-			$html .= $this->throwError ('There was a problem ' . ($editCall ? 'updating the call' : 'logging the request') . '.');
-			var_dump ($this->databaseConnection->error ());
-			return $html;
+		# Save the call data
+		if (!$callId = $this->saveCall ($editCall, $result, $html /* amended by reference */)) {
+			echo $html;
+			return false;
 		}
 		
 		# Confirm the call has been submitted
 		$html .= "\n<p>" . ($editCall ? 'Many thanks; the call has been updated.' : '<strong>Many thanks; your details have been submitted.</strong> ' . ucfirst ($this->settings['type']) . ' staff will be in contact in due course.') . '</p>';
+		
+		# Give link to menu if a call has been newly added
 		if (!$editCall) {
 			$html .= "\n<p>You can use the menu above to perform additional tasks or <a href=\"{$this->baseUrl}/logout.html\">log out</a> if you have finished.</p>";
 		}
-		
-		# Determine the call number
-		$callId = ($editCall ? $result['id'] : $this->databaseConnection->getLatestId ());
-		
-		# Move the image to its final URL
-		$this->moveImage ($image, $callId);
 		
 		# If the administrator's reply has entered/changed, e-mail the user
 		if ($editCall && $this->userIsAdministrator && ($editCall['reply'] != $result['reply'])) {
@@ -568,6 +555,43 @@ class helpdesk extends frontControllerApplication
 		
 		# Return the HTML
 		return $html;
+	}
+	
+	
+	# Function to save the call data
+	private function saveCall ($editCall, $result, &$html)
+	{
+		# Move the image to its final URL
+		#!# Not clear why this doesn't apply for adding a call
+		$imageFile = false;
+		if (!$editCall) {
+			$imageFile = $result['imageFile'];
+			unset ($result['imageFile']);
+		}
+		
+		# Add/update the new call
+		$function = ($editCall ? 'update' : 'insert');
+		if (!$this->databaseConnection->$function ($this->settings['database'], $this->settings['table'], $result, ($editCall ? array ('id' => $result['id']) : false), $emptyToNull = false)) {
+			$html .= $this->throwError ('There was a problem ' . ($editCall ? 'updating the call' : 'logging the request') . '.');
+			return false;
+		}
+		
+		# Determine the call number
+		$callId = ($editCall ? $result['id'] : $this->databaseConnection->getLatestId ());
+		
+		# Assemble and insert the message
+		$record = array (
+			'callId'	=> $callId,
+			'message'	=> $result['details'],
+			'email'		=> $result['username'] . '@' . $this->settings['emailDomain'],
+		);
+		$this->databaseConnection->insert ($this->settings['database'], 'messages', $record);
+		
+		# Move the image to its final URL
+		$this->moveImage ($imageFile, $callId);
+		
+		# Return the call ID
+		return $callId;
 	}
 	
 	
