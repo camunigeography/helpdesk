@@ -840,72 +840,10 @@ class helpdesk extends frontControllerApplication
 		# Start the HTML
 		$html = '';
 		
-		# Start constraints
-		$constraints = array ();
-		$preparedStatementValues = array ();
-		
-		# For a call ID, limit to that call
-		if ($callId) {
-			$constraints[] = "{$this->settings['table']}.id = :id";
-			$preparedStatementValues['id'] = $callId;
-		}
-		
-		# Limit to user if required
-		if (!$this->userIsAdministrator || $this->action == 'home') {
-			$constraints[] = 'calls.username = :user';
-			$preparedStatementValues['user'] = $this->user;
-		}
-		
-		# Limit by date if required
-		if ($limitDate && !$callId) {
-			$expirySeconds = ($this->settings['completedJobExpiryDays'] *  24 * 60 * 60);
-			$constraints[] = "(currentStatus != 'completed'" . (!$callId && $this->userIsAdministrator ? ')' : " OR ((UNIX_TIMESTAMP(NOW()) - UNIX_TIMESTAMP(timeCompleted) < {$expirySeconds}) AND currentStatus = 'completed'))");
-		}
-		
-		# Deal with searches, and insert the search into the database
-		if (strlen ($searchTerm)) {
-			$preparedStatementValues['searchTerm'] = '%' . $searchTerm . '%';
-			$preparedStatementValues['searchId'] = $searchTerm;
-			$constraints[] = "
-			(	   subject LIKE :searchTerm
-				OR calls.id = :searchId
-				OR calls.username LIKE :searchTerm
-				OR people.forename LIKE :searchTerm
-				OR people.surname LIKE :searchTerm
-				/* OR location LIKE :searchTerm */
-				OR category LIKE :searchTerm
-				/* OR itnumber LIKE :searchTerm */
-				OR details LIKE :searchTerm
-				OR reply LIKE :searchTerm
-				OR internalNotes LIKE :searchTerm
-			)";
-		}
-		
-		# Determine whether split building/room fields are present
-		$fields = $this->databaseConnection->getFields ($this->settings['database'], $this->settings['table']);
-		$fields = array_keys ($fields);
-		$locationFields = '';
-		if (in_array ('building', $fields) && in_array ('room', $fields)) {
-			$locationFields = ", {$this->settings['table']}.building, {$this->settings['table']}.room";
-		}
-		
-		# Assemble the SQL query
-		$query = "SELECT
-				{$this->settings['table']}.id, subject, currentStatus, timeSubmitted, timeCompleted, category {$locationFields}, details, reply, internalNotes, CONCAT(people.forename,' ',people.surname,' <',people.username,'>') as user,
-				CONCAT(DATE_FORMAT(CAST(timeSubmitted AS DATE), '%e/'), SUBSTRING(DATE_FORMAT(CAST(timeSubmitted AS DATE), '%M'), 1, 3), DATE_FORMAT(CAST(timeSubmitted AS DATE), '/%y')) AS formattedDate
-			FROM {$this->settings['table']}
-			LEFT OUTER JOIN {$this->settings['database']}.categories ON {$this->settings['table']}.categoryId = categories.id
-			LEFT OUTER JOIN {$this->settings['peopleDatabase']}.people ON {$this->settings['table']}.username = people.username
-			" . ($constraints ? 'WHERE ' . implode (' AND ', $constraints) : '') . '
-		;';
-		
-		# End the SQL query by specifying the order
-		$listMostRecentFirst = ($listMostRecentFirst || $this->settings['listMostRecentFirst'] && !$this->userIsAdministrator);
-		$query .= ' ORDER BY id' . ($listMostRecentFirst ? ' DESC' : '') . ';';
-		
-		# Execute the query and obtain an array of problems from it; if there are none, state so
+		# Get the calls data
 		#!# If there are no current calls it is impossible to get previous calls because of the 'else' block here
-		if (!$calls = $this->databaseConnection->getData ($query, false, true, $preparedStatementValues)) {
+		$calls = $this->getCalls ($callId, $limitDate, $searchTerm, $listMostRecentFirst);
+		if (!$calls) {
 			if ($callId) {
 				$html = "\n<p>The call you specified is either not valid, resolved a while ago, or you do not have rights to see it.</p>";
 			} else {
@@ -983,6 +921,90 @@ class helpdesk extends frontControllerApplication
 		
 		# Return the HTML
 		return $html;
+	}
+	
+	
+	# Model function to get calls data
+	private function getCalls ($callId, $limitDate, $searchTerm, $listMostRecentFirst)
+	{
+		# Start constraints
+		$constraints = array ();
+		$preparedStatementValues = array ();
+		
+		# For a call ID, limit to that call
+		if ($callId) {
+			$constraints[] = "{$this->settings['table']}.id = :id";
+			$preparedStatementValues['id'] = $callId;
+		}
+		
+		# Limit to user if required
+		if (!$this->userIsAdministrator || $this->action == 'home') {
+			$constraints[] = 'calls.username = :user';
+			$preparedStatementValues['user'] = $this->user;
+		}
+		
+		# Limit by date if required
+		if ($limitDate && !$callId) {
+			$expirySeconds = ($this->settings['completedJobExpiryDays'] *  24 * 60 * 60);
+			$constraints[] = "(currentStatus != 'completed'" . (!$callId && $this->userIsAdministrator ? ')' : " OR ((UNIX_TIMESTAMP(NOW()) - UNIX_TIMESTAMP(timeCompleted) < {$expirySeconds}) AND currentStatus = 'completed'))");
+		}
+		
+		# Deal with searches, and insert the search into the database
+		if (strlen ($searchTerm)) {
+			$preparedStatementValues['searchTerm'] = '%' . $searchTerm . '%';
+			$preparedStatementValues['searchId'] = $searchTerm;
+			$constraints[] = "
+			(	   subject LIKE :searchTerm
+				OR calls.id = :searchId
+				OR calls.username LIKE :searchTerm
+				OR people.forename LIKE :searchTerm
+				OR people.surname LIKE :searchTerm
+				/* OR location LIKE :searchTerm */
+				OR category LIKE :searchTerm
+				/* OR itnumber LIKE :searchTerm */
+				OR details LIKE :searchTerm
+				OR reply LIKE :searchTerm
+				OR internalNotes LIKE :searchTerm
+			)";
+		}
+		
+		# Determine whether split building/room fields are present
+		$fields = $this->databaseConnection->getFields ($this->settings['database'], $this->settings['table']);
+		$fields = array_keys ($fields);
+		$locationFields = '';
+		if (in_array ('building', $fields) && in_array ('room', $fields)) {
+			$locationFields = "{$this->settings['table']}.building, {$this->settings['table']}.room,";
+		}
+		
+		# Assemble the SQL query
+		$query = "SELECT
+				{$this->settings['table']}.id,
+				subject,
+				currentStatus,
+				timeSubmitted,
+				timeCompleted,
+				category,
+				{$locationFields}
+				details,
+				reply,
+				internalNotes,
+				CONCAT(people.forename,' ',people.surname,' <',people.username,'>') as user,
+				CONCAT(DATE_FORMAT(CAST(timeSubmitted AS DATE), '%e/'), SUBSTRING(DATE_FORMAT(CAST(timeSubmitted AS DATE), '%M'), 1, 3), DATE_FORMAT(CAST(timeSubmitted AS DATE), '/%y')) AS formattedDate
+			FROM {$this->settings['table']}
+			LEFT OUTER JOIN {$this->settings['database']}.categories ON {$this->settings['table']}.categoryId = categories.id
+			LEFT OUTER JOIN {$this->settings['peopleDatabase']}.people ON {$this->settings['table']}.username = people.username
+			" . ($constraints ? 'WHERE ' . implode (' AND ', $constraints) : '') . '
+		;';
+		
+		# End the SQL query by specifying the order
+		$listMostRecentFirst = ($listMostRecentFirst || $this->settings['listMostRecentFirst'] && !$this->userIsAdministrator);
+		$query .= ' ORDER BY id' . ($listMostRecentFirst ? ' DESC' : '') . ';';
+		
+		# Execute the query and obtain an array of problems from it; if there are none, state so
+		$data = $this->databaseConnection->getData ($query, false, true, $preparedStatementValues);
+		
+		# Return the data
+		return $data;
 	}
 	
 	
