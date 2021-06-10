@@ -690,21 +690,32 @@ class helpdesk extends frontControllerApplication
 	# Function to search for calls
 	public function search ()
 	{
+		# Start the HTML
+		$html = '';
+		
 		# Process the form or end
 		if (!$result = $this->searchForm ()) {return false;}
 		
+		# Get the search term
+		$searchTerm = $result['q'];
+		
 		#!# Currently not working
 		# End if no submission
-		if (!strlen ($result['q'])) {
-			echo $this->recentSearches ();
+		if (!strlen ($searchTerm)) {
+			$html = $this->recentSearches ();
+			echo $html;
 			return false;
 		}
+		
+		# Log the search term
+		$log = array ('search' => $searchTerm, 'username' => $this->user);
+		$this->databaseConnection->insert ($this->settings['database'], 'searches', $log);
 		
 		# Determine if the call dates should be limited, i.e. if only showing unresolved items
 		$limitDate = ($result['what'] == 'unresolved');
 		
 		# Get the list of calls
-		$html = $this->listCalls (false, $limitDate, $result['q']);
+		$html = $this->listCalls (false, $limitDate, $searchTerm);
 		
 		# Show the HTML
 		echo $html;
@@ -851,13 +862,6 @@ class helpdesk extends frontControllerApplication
 				OR reply LIKE '%{$searchTermEscaped}%'
 				OR internalNotes LIKE '%{$searchTermEscaped}%'
 			)";
-		}
-		if ($searchTerm) {
-			$log = array ('search' => $searchTerm, 'username' => $this->user);
-			if (!$this->databaseConnection->insert ($this->settings['database'], 'searches', $log)) {
-				$html = $this->throwError ("There was a problem logging the helpdesk search phrase. The details were: \n\n" . print_r ($log, true), false);
-				return $html;
-			}
 		}
 		
 		# Determine whether split building/room fields are present
