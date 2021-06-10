@@ -687,7 +687,7 @@ class helpdesk extends frontControllerApplication
 		$calls = $this->getCalls (false, $limitDate = false, false, $listMostRecentFirst = true);
 		
 		# Render the calls
-		$html = $this->renderCalls ($calls, false, $limitDate = false, false);
+		$html = $this->renderCalls ($calls, $limitDate = false, false);
 		
 		# Show the HTML
 		echo $html;
@@ -729,7 +729,7 @@ class helpdesk extends frontControllerApplication
 		}
 		
 		# Render the calls
-		$html = $this->renderCalls ($calls, false, $limitDate, $searchTerm);
+		$html = $this->renderCalls ($calls, $limitDate, $searchTerm);
 		
 		# Show the HTML
 		echo $html;
@@ -846,26 +846,27 @@ class helpdesk extends frontControllerApplication
 			return false;
 		}
 		
-		# Get the calls
+		# Get the call
 		if (!$calls = $this->getCalls ($callId)) {
 			$html = "\n<p>The call you specified is either not valid, resolved a while ago, or you do not have rights to see it.</p>";
 			echo $html;
 			return false;
 		}
+		$call = $calls[$callId];
 		
 		# Link back to all calls
 		$html .= "\n<p><a href=\"{$this->baseUrl}/calls/" . ($this->userIsAdministrator ? "#call{$callId}" : '') . "\">&laquo; Return to the list of all calls</a></p>";
 		
 		# Render the call
-		$html .= $this->renderCalls ($calls, $callId);
+		$html .= $this->callHtml ($call);
 		
 		# Show the HTML
 		echo $html;
 	}
 	
 	
-	# Function to show a list of jobs or a single job
-	private function renderCalls ($calls, $callId = false, $limitDate = true, $searchTerm = false)
+	# Function to show a list of calls
+	private function renderCalls ($calls, $limitDate = true, $searchTerm = false)
 	{
 		# Start the HTML
 		$html = '';
@@ -883,31 +884,29 @@ class helpdesk extends frontControllerApplication
 			return $html;
 		}
 		
-		# Construct the HTML
-		if (!$callId) {
-			$html .= "\n\n" . (!$limitDate ? '<p class="helpdeskdescription">All items (' . number_format (count ($calls)) . ') ' . ($this->userIsAdministrator ? 'which have been submitted' : 'which you have submitted') . ' are listed below.' : '<p class="helpdeskdescription">Problems ' . ($this->userIsAdministrator ? '' : 'resolved within the last ' . $this->settings['completedJobExpiryDays'] . ' day' . (($this->settings['completedJobExpiryDays'] == 1) ? '' : 's') . ' or ') . 'unresolved (' . count ($calls) . ') are listed below, '. ($this->settings['listMostRecentFirst'] ? 'most recent' : 'earliest') . ' first.') . (strlen ($searchTerm) ? '' : " You can also: " . ($limitDate ? '<a href="' . $this->baseUrl . '/calls/all.html">include any older, resolved items also' : '<a href="' . $this->baseUrl . '/calls/">list only recent/unresolved items') . '</a>.') . '</p>';
+		# Introduction
+		$html .= "\n\n" . '<p class="helpdeskdescription">';
+		if ($limitDate) {
+			$html .= 'Problems ' . ($this->userIsAdministrator ? '' : 'resolved within the last ' . $this->settings['completedJobExpiryDays'] . ' day' . (($this->settings['completedJobExpiryDays'] == 1) ? '' : 's') . ' or ') . 'unresolved (' . count ($calls) . ') are listed below, ' . ($this->settings['listMostRecentFirst'] ? 'most recent' : 'earliest') . ' first.';
+			if (!strlen ($searchTerm)) {
+				$html .= " You can also: " . ($limitDate ? '<a href="' . $this->baseUrl . '/calls/all.html">include any older, resolved items also' : '<a href="' . $this->baseUrl . '/calls/">list only recent/unresolved items') . '</a>.';
+			}
+		} else {
+			$total = number_format (count ($calls));
+			$html .= "All items ({$total}) " . ($this->userIsAdministrator ? 'which have been submitted' : 'which you have submitted') . ' are listed below.';
 		}
-		
-		# Determine whether this is the listing mode (i.e. calls page for admins only)
-		$fullListing = ($this->userIsAdministrator && $this->action == 'calls');
+		$html .= '</p>';
 		
 		# Compile the panels
 		$panels = array ();
 		foreach ($calls as $id => $call) {
-			
-			# Start with the heading
-			$panels[$id]  = "\n<h3>" . htmlspecialchars ("#{$id} [{$call['formattedDate']}]: {$call['subject']}" . (($fullListing || $this->action == 'search') ? " - {$call['user']}" : '')) . ($call['currentStatus'] == 'completed' ? ' <span class="resolved">[resolved]</span>' : '') . '</h3>';
-			
-			# Append the call HTML to the main HTML
+			$title  = "#{$id} [{$call['formattedDate']}]: {$call['subject']}" . ($this->userIsAdministrator ? " - {$call['user']}" : '');
+			$panels[$id]  = "\n<h3>" . htmlspecialchars ($title) . ($call['currentStatus'] == 'completed' ? ' <span class="resolved">[resolved]</span>' : '') . '</h3>';
 			$panels[$id] .= $this->callHtml ($call);
 		}
 		
-		# If not the single call screen, do expansion of headings using jQuery
-		if ($callId) {
-			$html .= implode ($panels);
-		} else {
-			$html .= $this->callsExpandableUi ($panels);
-		}
+		# Expand headings using jQuery
+		$html .= $this->callsExpandableUi ($panels);
 		
 		# Return the HTML
 		return $html;
