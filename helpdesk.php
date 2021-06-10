@@ -857,7 +857,14 @@ class helpdesk extends frontControllerApplication
 		# Link back to all calls
 		$html .= "\n<p><a href=\"{$this->baseUrl}/calls/" . ($this->userIsAdministrator ? "#call{$callId}" : '') . "\">&laquo; Return to the list of all calls</a></p>";
 		
-		# Render the call
+		# If editing is required, hand off to the call submission method
+		if ($this->callIsEditable ($call)) {
+			$html .= $this->reportForm ($call['id']);
+			echo $html;
+			return;
+		}
+		
+		# Otherwise show the call
 		$html .= $this->callHtml ($call);
 		
 		# Show the HTML
@@ -1044,24 +1051,15 @@ class helpdesk extends frontControllerApplication
 	# Function to produce HTML from a specified call
 	private function callHtml ($call)
 	{
+		# Evaluate whether the call is editable
+		$callIsEditable = $this->callIsEditable ($call);
+		
 		# Start the HTML
 		$html  = '';
 		
 		# Not if the call is marked as resolved
 		if ($call['currentStatus'] == 'completed') {
 			$html .= '<p class="warning">Note: this call below has been marked as resolved.</p>';
-		}
-		
-		# Evaluate whether the call is editable
-		$callIsEditable = $this->callIsEditable ($call);
-		
-		# Determine if in edit mode
-		$editMode = ($callIsEditable && $this->action == 'call');
-			
-		# If editing is required, hand off to the call submission method
-		if ($editMode) {
-			$html .= $this->reportForm ($call['id']);
-			return $html;
 		}
 		
 		# Format the timestamp
