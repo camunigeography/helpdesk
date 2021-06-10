@@ -564,37 +564,83 @@ class helpdesk extends frontControllerApplication
 			$this->databaseConnection->update ($this->settings['database'], $this->settings['table'], array ('imageFile' => $imageFilenameNew), array ('id' => $callId));
 		}
 		
-		# Determine the call administration URL
-		$callDetailsUrl = $_SERVER['_SITE_URL'] . $this->baseUrl . "/calls/{$callId}/";
-		
 		# If the administrator's reply has entered/changed, e-mail the user
 		if ($editCall && $this->userIsAdministrator && ($editCall['reply'] != $result['reply'])) {
-			$user = $this->userDetails ($result['username']);
-			// $headers  = "From: Helpdesk <{$this->settings['administratorEmail']}>\n";
-			// $headers .= "Reply-To: \"{$this->userDetails['forename']} {$this->userDetails['surname']}\" <{$this->userDetails['_preferredEmail']}>\n";
-			$headers  = "From: \"{$this->userDetails['forename']} {$this->userDetails['surname']}\" <{$this->userDetails['_preferredEmail']}>\n";
-			$headers .= 'Cc: ' . $this->getRecipients ($exclude = $this->user) . "\n";		// Copy the other administrators
-			$date = $editCall['timeSubmitted'];
-			$message  = "\n" . "On {$date}, {$user['_fullname']} wrote:\n" . application::emailQuoting ($editCall['details']) . "\n\n" . stripslashes ($result['reply']) . "\n\n\n" . $this->userDetails['forename'];
-			$message = wordwrap ($message);
-			$subject = "Re: [Helpdesk][$callId] " . $result['subject'];
-			$to = "\"{$user['_fullname']}\" <{$user['_preferredEmail']}>";
-			if (!application::utf8Mail ($to, $subject, $message, $headers)) {
-				$html .= $this->throwError ("There was a problem sending an e-mail to alert the {$this->settings['type']} staff to a new call, but the call itself has been logged successfully.");
-			}
-			$html .= "\n<br /><p>The following e-mail has been sent:</p>\n<hr />";
-			$html .= "\n<pre>To: {$user['_preferredEmail']}\n" . htmlspecialchars ($headers) . 'Subject: ' . htmlspecialchars ($subject) . "\n" . htmlspecialchars ($message)  . '</pre>';
+			$html .= $this->mailCallUser ($callId, $result, $editCall, $user);
 			
 		# If it is a new call, or the user's submission has changed, e-mail the admin
 		} else if (!$editCall || ($editCall && ($editCall['details'] != $result['details']))) {
-			
-			$headers  = "From: Helpdesk <{$this->settings['administratorEmail']}>\n";
-			$headers .= "Reply-To: \"{$this->userDetails['forename']} {$this->userDetails['surname']}\" <{$this->userDetails['_preferredEmail']}>\n";
-			$message  = "\nA support call has been " . ($editCall ? 'updated' : 'submitted') . ". The details are online at:\n\n{$callDetailsUrl}\n\n" . stripslashes ($result['details']);
-			$message .= "\n\n\n** Please respond to the user using the web interface rather than replying to this e-mail directly. **";
-			if (!application::utf8Mail ($this->getRecipients (), ("[Helpdesk][{$callId}] " . $result['subject']) . ($editCall ? ' (updated)' : ''), wordwrap ($message), $headers)) {
-				$html .= $this->throwError ("There was a problem sending an e-mail to alert the {$this->settings['type']} staff to the call, but the call details have been logged successfully.");
-			}
+			$html .= $this->mailCallAdmin ($callId, $result, $editCall);
+		}
+		
+		# Return the HTML
+		return $html;
+	}
+	
+	
+	# Function to e-mail call changes to a user
+	private function mailCallUser ($callId, $result, $editCall, $user)
+	{
+		# Start the HTML
+		$html = '';
+		
+		# Get the details of the user
+		$user = $this->userDetails ($result['username']);
+		
+		# Construct the e-mail headers
+		$recipient = "\"{$user['_fullname']}\" <{$user['_preferredEmail']}>";
+		$subject = "Re: [Helpdesk][{$callId}] " . $result['subject'];
+		$headers  = "From: \"{$this->userDetails['forename']} {$this->userDetails['surname']}\" <{$this->userDetails['_preferredEmail']}>\n";
+		$headers .= 'Cc: ' . $this->getRecipients ($exclude = $this->user);		// Copy the other administrators
+		$date = $editCall['timeSubmitted'];
+		
+		# Construct the message
+		$message  = "\n" . "On {$date}, {$user['_fullname']} wrote:";
+		$message .= "\n" . application::emailQuoting ($editCall['details']);
+		$message .= "\n\n" . stripslashes ($result['reply']);
+		$message .= "\n\n\n" . $this->userDetails['forename'];
+		
+		# Send the e-mail
+		if (!application::utf8Mail ($recipient, $subject, wordwrap ($message), $headers)) {
+			$html .= $this->throwError ("There was a problem sending an e-mail to alert the {$this->settings['type']} staff to a new call, but the call itself has been logged successfully.");
+		}
+		
+		# Report outcome
+		$html .= "\n<br /><p>The following e-mail has been sent:</p>";
+		$html .= "\n<hr />";
+		$html .= "\n<pre>";
+		$html .= 'To: ' . $user['_preferredEmail'];
+		$html .= "\n" . htmlspecialchars ($headers);
+		$html .= "\n" . 'Subject: ' . htmlspecialchars ($subject);
+		$html .= "\n" . htmlspecialchars ($message);
+		$html .= '</pre>';
+		
+		# Return the HTML
+		return $html;
+	}
+	
+	
+	# Function to e-mail the admin details of a call
+	private function mailCallAdmin ($callId, $result, $editCall)
+	{
+		# Start the HTML
+		$html = '';
+		
+		# Construct the e-mail headers
+		$recipients = $this->getRecipients ();
+		$subject = "[Helpdesk][{$callId}] " . $result['subject'] . ($editCall ? ' (updated)' : '');
+		$headers  = "From: Helpdesk <{$this->settings['administratorEmail']}>\n";
+		$headers .= "Reply-To: \"{$this->userDetails['forename']} {$this->userDetails['surname']}\" <{$this->userDetails['_preferredEmail']}>\n";
+		
+		# Construct the message
+		$message  = "\n". 'A support call has been ' . ($editCall ? 'updated' : 'submitted') . '. The details are online at:';
+		$message .= "\n\n" . $_SERVER['_SITE_URL'] . $this->baseUrl . "/calls/{$callId}/";
+		$message .= "\n\n" . stripslashes ($result['details']);
+		$message .= "\n\n\n" . '** Please respond to the user using the web interface rather than replying to this e-mail directly. **';
+		
+		# Send the e-mail
+		if (!application::utf8Mail ($recipients, $subject, wordwrap ($message), $headers)) {
+			$html .= $this->throwError ("There was a problem sending an e-mail to alert the {$this->settings['type']} staff to the call, but the call details have been logged successfully.");
 		}
 		
 		# Return the HTML
