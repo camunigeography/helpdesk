@@ -21,7 +21,7 @@
 	RewriteRule ^$applicationBaseUrl/(calls|search)/$ $applicationBaseUrl/index.html?action=$1 [L]
 	RedirectMatch Permanent ^$applicationBaseUrl/(calls|search)$ $applicationBaseUrl/$1/
 	RewriteRule ^$applicationBaseUrl/calls/all.html$ $applicationBaseUrl/index.html?action=allcalls [L]
-	RewriteRule ^$applicationBaseUrl/(calls)/([0-9]+)/$ $applicationBaseUrl/index.html?action=$1&item=$2 [L]
+	RewriteRule ^$applicationBaseUrl/(calls)/([0-9]+)/$ $applicationBaseUrl/index.html?action=call&item=$2 [L]
 	RedirectMatch Permanent ^$applicationBaseUrl/(calls)/([0-9]+)$ $applicationBaseUrl/$1/$2/
 	
 	# Editing

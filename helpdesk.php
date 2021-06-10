@@ -55,6 +55,11 @@ class helpdesk extends frontControllerApplication
 				'tab' => 'View/edit submitted problems',
 				'icon' => 'application_double',
 			),
+			'call' => array (
+				'description' => 'View/edit call',
+				'url' => 'calls/',
+				'usetab' => 'calls',
+			),
 			'search' => array (
 				'description' => 'Search calls',
 				'usetab' => 'calls',
@@ -790,10 +795,21 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Function to show current calls of the user
-	public function calls ($callId = false, $limitDate = true, $searchTerm = false)
+	public function calls ()
 	{
 		# Get the list of calls
-		$html = $this->listCalls ($callId, $limitDate, $searchTerm);
+		$html = $this->listCalls ();
+		
+		# Show the HTML
+		echo $html;
+	}
+	
+	
+	# Function to show a single call
+	public function call ($callId)
+	{
+		# Get the list of calls
+		$html = $this->listCalls ($callId);
 		
 		# Show the HTML
 		echo $html;
