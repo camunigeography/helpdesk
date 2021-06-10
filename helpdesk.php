@@ -261,7 +261,11 @@ class helpdesk extends frontControllerApplication
 		# Show my current calls
 		$html .= "\n<h2>My current/recent problems</h2>";
 		$html .= $this->showCallRate (false);
-		$html .= $this->listCalls (false);
+		if (!$calls = $this->getCalls ()) {
+			$html .= "\n<p>{$this->tick} You do not appear to have any logged {$this->settings['type']} problems outstanding" . ($this->userIsAdministrator ? '  that you submitted for yourself' : '') . '.</p>';
+		} else {
+			$html .= $this->renderCalls ($calls);
+		}
 		
 		# Show the reporting screen
 		$html .= "\n<h2>Report a new problem</h2>";
@@ -680,7 +684,10 @@ class helpdesk extends frontControllerApplication
 	public function allcalls ()
 	{
 		# Get the list of calls
-		$html = $this->listCalls (false, $limitDate = false, false, $listMostRecentFirst = true);
+		$calls = $this->getCalls (false, $limitDate = false, false, $listMostRecentFirst = true);
+		
+		# Render the calls
+		$html = $this->renderCalls ($calls, false, $limitDate = false, false);
 		
 		# Show the HTML
 		echo $html;
@@ -714,8 +721,15 @@ class helpdesk extends frontControllerApplication
 		# Determine if the call dates should be limited, i.e. if only showing unresolved items
 		$limitDate = ($result['what'] == 'unresolved');
 		
-		# Get the list of calls
-		$html = $this->listCalls (false, $limitDate, $searchTerm);
+		# Get the calls
+		if (!$calls = $this->getCalls (false, $limitDate, $searchTerm)) {
+			$html = "\n<p>No matching calls were found.</p>";
+			echo $html;
+			return false;
+		}
+		
+		# Render the calls
+		$html = $this->renderCalls ($calls, false, $limitDate, $searchTerm);
 		
 		# Show the HTML
 		echo $html;
@@ -808,8 +822,11 @@ class helpdesk extends frontControllerApplication
 	# Function to show current calls of the user
 	public function calls ()
 	{
-		# Get the list of calls
-		$html = $this->listCalls ();
+		# Get the calls
+		$calls = $this->getCalls ();
+		
+		# Render the calls
+		$html = $this->renderCalls ($calls);
 		
 		# Show the HTML
 		echo $html;
@@ -819,9 +836,6 @@ class helpdesk extends frontControllerApplication
 	# Function to show a single call
 	public function call ($callId)
 	{
-		# Get the list of calls
-		$html = $this->listCalls ($callId);
-		
 		# Ensure a supplied call number is numeric
 		if (!$callId || !is_numeric ($callId)) {
 			$html = "\n<p class=\"warning\">Error: The call number must be numeric.</p>";
@@ -829,37 +843,34 @@ class helpdesk extends frontControllerApplication
 			return false;
 		}
 		
+		# Get the calls
+		if (!$calls = $this->getCalls ($callId)) {
+			$html = "\n<p>The call you specified is either not valid, resolved a while ago, or you do not have rights to see it.</p>";
+			echo $html;
+			return false;
+		}
+		
+		# Render the call
+		$html = $this->renderCalls ($calls, $callId);
+		
 		# Show the HTML
 		echo $html;
 	}
 	
 	
 	# Function to show a list of jobs or a single job
-	private function listCalls ($callId = false, $limitDate = true, $searchTerm = false, $listMostRecentFirst = false)
+	private function renderCalls ($calls, $callId = false, $limitDate = true, $searchTerm = false)
 	{
 		# Start the HTML
 		$html = '';
 		
-		# Get the calls data
+		# End, with message, if no calls
 		#!# If there are no current calls it is impossible to get previous calls because of the 'else' block here
-		$calls = $this->getCalls ($callId, $limitDate, $searchTerm, $listMostRecentFirst);
 		if (!$calls) {
-			if ($callId) {
-				$html = "\n<p>The call you specified is either not valid, resolved a while ago, or you do not have rights to see it.</p>";
+			if ($this->userIsAdministrator) {
+				$html = "\n<p>{$this->tick} There are no {$this->settings['type']} problems outstanding." . ($this->action == 'calls' ? ' CONGRATULATIONS! Enjoy it while it lasts ...' : '') . '</p>';
 			} else {
-				if ($this->userIsAdministrator) {
-					if (strlen ($searchTerm)) {
-						$html = "\n<p>No matching calls were found.</p>";
-					} else {
-						if ($this->action == 'home') {	// i.e. personal listing
-							$html = "\n<p>There are no calls outstanding that you submitted for yourself.</p>";
-						} else {
-							$html = "\n<p>{$this->tick} There are no {$this->settings['type']} problems outstanding." . ($this->action == 'calls' ? ' CONGRATULATIONS! Enjoy it while it lasts ...' : '') . '</p>';
-						}
-					}
-				} else {
-					$html = "\n<p>{$this->tick} You do not appear to have any logged {$this->settings['type']} problems outstanding.</p>";
-				}
+				$html = "\n<p>{$this->tick} You do not appear to have any logged {$this->settings['type']} problems outstanding.</p>";
 			}
 			
 			# Return the HTML
@@ -925,7 +936,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Model function to get calls data
-	private function getCalls ($callId, $limitDate, $searchTerm, $listMostRecentFirst)
+	private function getCalls ($callId = false, $limitDate = true, $searchTerm = false, $listMostRecentFirst = false)
 	{
 		# Start constraints
 		$constraints = array ();
@@ -1239,7 +1250,6 @@ class helpdesk extends frontControllerApplication
 		
 		# List calls
 		#!# Not yet implemented
-		// $html .= $this->listCalls (false);
 		
 		# Register the HTML
 		$data['html'] = $html;
