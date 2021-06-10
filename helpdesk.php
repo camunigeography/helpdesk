@@ -898,12 +898,8 @@ class helpdesk extends frontControllerApplication
 			# Start with the heading
 			$panels[$id]  = "\n<h3>" . htmlspecialchars ("#{$id} [{$call['formattedDate']}]: {$call['subject']}" . (($fullListing || $this->action == 'search') ? " - {$call['user']}" : '')) . ($call['currentStatus'] == 'completed' ? ' <span class="resolved">[resolved]</span>' : '') . '</h3>';
 			
-			# Evaluate whether the call is editable; a call is editable if the currentStatus is not complete or the currentStatus is complete but the time difference is < $this->settings['completedJobExpiryDays'] days
-			#!# Ideally this would somehow be done as merged with the above, but that might require two separate SQL lookups and merging/demerging them
-			$userHasEditRights = (($call['currentStatus'] != 'completed') || (((strtotime (date ('Y-m-d')) - strtotime ($call['timeCompleted'])) < ($this->settings['completedJobExpiryDays'] * 24 * 60 * 60)) && ($call['currentStatus'] == 'completed')));
-			
 			# Append the call HTML to the main HTML
-			$panels[$id] .= $this->callHtml ($call, $userHasEditRights, ($userHasEditRights && $callId), $minimised = true);
+			$panels[$id] .= $this->callHtml ($call);
 		}
 		
 		# If not the single call screen, do expansion of headings using jQuery
@@ -1048,7 +1044,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Function to produce HTML from a specified call
-	private function callHtml ($call, $userHasEditRights, $editMode = false, $minimised = false)
+	private function callHtml ($call)
 	{
 		# Start the HTML
 		$html  = '';
@@ -1056,6 +1052,13 @@ class helpdesk extends frontControllerApplication
 			$html .= '<p class="warning">Note: this call below has been marked as resolved.</p>';
 		}
 		
+		# Evaluate whether the call is editable; a call is editable if the currentStatus is not complete or the currentStatus is complete but the time difference is < $this->settings['completedJobExpiryDays'] days
+		#!# Ideally this would somehow be done as merged with the above, but that might require two separate SQL lookups and merging/demerging them
+		$userHasEditRights = (($call['currentStatus'] != 'completed') || (((strtotime (date ('Y-m-d')) - strtotime ($call['timeCompleted'])) < ($this->settings['completedJobExpiryDays'] * 24 * 60 * 60)) && ($call['currentStatus'] == 'completed')));
+		
+		# Determine if in edit mode
+		$editMode = ($userHasEditRights && $this->action == 'call');
+			
 		# If editing is required, hand off to the call submission method
 		if ($editMode) {
 			$html .= $this->reportForm ($call['id']);
@@ -1083,9 +1086,6 @@ class helpdesk extends frontControllerApplication
 		
 		# Construct the table data
 		$table = array ();
-		if (!$minimised) {$table['Call number'] = $call['id'];}
-		if (!$minimised) {$table['Submitted on'] = $call['timeSubmitted'];}
-		if (!$minimised) {$table['Submitted by'] = $call['user'];}
 		$table['details'] = application::makeClickableLinks ($call['details']);
 		if (isSet ($call['building'])) {$table['building'] = $call['building'];}
 		if (isSet ($call['room'])) {$table['room'] = $call['room'];}
