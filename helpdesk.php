@@ -890,8 +890,7 @@ class helpdesk extends frontControllerApplication
 		
 		# Loop through the results and add on the call information HTML
 		$callsBoxes = array ();
-		foreach ($calls as $call) {
-			$id = $call['id'];
+		foreach ($calls as $id => $call) {
 			
 			# Evaluate whether the call is editable; a call is editable if the currentStatus is not complete or the currentStatus is complete but the time difference is < $this->settings['completedJobExpiryDays'] days
 			#!# Ideally this would somehow be done as merged with the above, but that might require two separate SQL lookups and merging/demerging them
@@ -906,8 +905,7 @@ class helpdesk extends frontControllerApplication
 		
 		# Compile the calls HTML structure
 		$panels = array ();
-		foreach ($calls as $call) {
-			$id = $call['id'];
+		foreach ($calls as $id => $call) {
 			$panels[$id]  = "\n<h3>" . htmlspecialchars ("#{$id} [{$call['formattedDate']}]: {$call['subject']}" . (($fullListing || $this->action == 'search') ? " - {$call['user']}" : '')) . ($call['currentStatus'] == 'completed' ? ' <span class="resolved">[resolved]</span>' : '') . '</h3>';
 			$panels[$id] .= $callsBoxes[$id];
 		}
@@ -1025,10 +1023,10 @@ class helpdesk extends frontControllerApplication
 		$query .= ' ORDER BY id' . ($listMostRecentFirst ? ' DESC' : '') . ';';
 		
 		# Execute the query and obtain an array of problems from it; if there are none, state so
-		$data = $this->databaseConnection->getData ($query, false, true, $preparedStatementValues);
+		$calls = $this->databaseConnection->getData ($query, "{$this->settings['database']}.{$this->settings['table']}", true, $preparedStatementValues);
 		
 		# Return the data
-		return $data;
+		return $calls;
 	}
 	
 	
