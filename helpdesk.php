@@ -888,26 +888,22 @@ class helpdesk extends frontControllerApplication
 			$html .= "\n\n" . (!$limitDate ? '<p class="helpdeskdescription">All items (' . number_format (count ($calls)) . ') ' . ($this->userIsAdministrator ? 'which have been submitted' : 'which you have submitted') . ' are listed below.' : '<p class="helpdeskdescription">Problems ' . ($this->userIsAdministrator ? '' : 'resolved within the last ' . $this->settings['completedJobExpiryDays'] . ' day' . (($this->settings['completedJobExpiryDays'] == 1) ? '' : 's') . ' or ') . 'unresolved (' . count ($calls) . ') are listed below, '. ($this->settings['listMostRecentFirst'] ? 'most recent' : 'earliest') . ' first.') . (strlen ($searchTerm) ? '' : " You can also: " . ($limitDate ? '<a href="' . $this->baseUrl . '/calls/all.html">include any older, resolved items also' : '<a href="' . $this->baseUrl . '/calls/">list only recent/unresolved items') . '</a>.') . '</p>';
 		}
 		
-		# Loop through the results and add on the call information HTML
-		$callsBoxes = array ();
+		# Determine whether this is the listing mode (i.e. calls page for admins only)
+		$fullListing = ($this->userIsAdministrator && $this->action == 'calls');
+		
+		# Compile the panels
+		$panels = array ();
 		foreach ($calls as $id => $call) {
+			
+			# Start with the heading
+			$panels[$id]  = "\n<h3>" . htmlspecialchars ("#{$id} [{$call['formattedDate']}]: {$call['subject']}" . (($fullListing || $this->action == 'search') ? " - {$call['user']}" : '')) . ($call['currentStatus'] == 'completed' ? ' <span class="resolved">[resolved]</span>' : '') . '</h3>';
 			
 			# Evaluate whether the call is editable; a call is editable if the currentStatus is not complete or the currentStatus is complete but the time difference is < $this->settings['completedJobExpiryDays'] days
 			#!# Ideally this would somehow be done as merged with the above, but that might require two separate SQL lookups and merging/demerging them
 			$userHasEditRights = (($call['currentStatus'] != 'completed') || (((strtotime (date ('Y-m-d')) - strtotime ($call['timeCompleted'])) < ($this->settings['completedJobExpiryDays'] * 24 * 60 * 60)) && ($call['currentStatus'] == 'completed')));
 			
 			# Append the call HTML to the main HTML
-			$callsBoxes[$id]  = $this->callHtml ($call, $userHasEditRights, ($userHasEditRights && $callId), $minimised = true);
-		}
-		
-		# Determine whether this is the listing mode (i.e. calls page for admins only)
-		$fullListing = ($this->userIsAdministrator && $this->action == 'calls');
-		
-		# Compile the calls HTML structure
-		$panels = array ();
-		foreach ($calls as $id => $call) {
-			$panels[$id]  = "\n<h3>" . htmlspecialchars ("#{$id} [{$call['formattedDate']}]: {$call['subject']}" . (($fullListing || $this->action == 'search') ? " - {$call['user']}" : '')) . ($call['currentStatus'] == 'completed' ? ' <span class="resolved">[resolved]</span>' : '') . '</h3>';
-			$panels[$id] .= $callsBoxes[$id];
+			$panels[$id] .= $this->callHtml ($call, $userHasEditRights, ($userHasEditRights && $callId), $minimised = true);
 		}
 		
 		# If not the single call screen, do expansion of headings using jQuery
