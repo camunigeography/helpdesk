@@ -840,27 +840,44 @@ class helpdesk extends frontControllerApplication
 		# Start the HTML
 		$html = '';
 		
-		# Define query limitations
-		$constraints = array ('1=1');
-		if ($callId) {$constraints[] = "{$this->settings['table']}.id = '$callId'";}
-		if (!$this->userIsAdministrator || $this->action == 'home') {$constraints[] = "calls.username = '{$this->user}'";}
-		if ($limitDate && !$callId) {$constraints[] = "(currentStatus != 'completed'" . (!$callId && $this->userIsAdministrator ? ')' : " OR ((UNIX_TIMESTAMP(NOW()) - UNIX_TIMESTAMP(timeCompleted) < " . ($this->settings['completedJobExpiryDays'] *  24 * 60 * 60) . ") AND currentStatus = 'completed'))");}
+		# Start constraints
+		$constraints = array ();
+		$preparedStatementValues = array ();
+		
+		# For a call ID, limit to that call
+		if ($callId) {
+			$constraints[] = "{$this->settings['table']}.id = :id";
+			$preparedStatementValues['id'] = $callId;
+		}
+		
+		# Limit to user if required
+		if (!$this->userIsAdministrator || $this->action == 'home') {
+			$constraints[] = 'calls.username = :user';
+			$preparedStatementValues['user'] = $this->user;
+		}
+		
+		# Limit by date if required
+		if ($limitDate && !$callId) {
+			$expirySeconds = ($this->settings['completedJobExpiryDays'] *  24 * 60 * 60);
+			$constraints[] = "(currentStatus != 'completed'" . (!$callId && $this->userIsAdministrator ? ')' : " OR ((UNIX_TIMESTAMP(NOW()) - UNIX_TIMESTAMP(timeCompleted) < {$expirySeconds}) AND currentStatus = 'completed'))");
+		}
 		
 		# Deal with searches, and insert the search into the database
 		if (strlen ($searchTerm)) {
-			$searchTermEscaped = $this->databaseConnection->escape ($searchTerm);
+			$preparedStatementValues['searchTerm'] = '%' . $searchTerm . '%';
+			$preparedStatementValues['searchId'] = $searchTerm;
 			$constraints[] = "
-			(	   subject LIKE '%{$searchTermEscaped}%'
-				OR calls.id = '{$searchTermEscaped}'
-				OR calls.username LIKE '%{$searchTermEscaped}%'
-				OR people.forename LIKE '%{$searchTermEscaped}%'
-				OR people.surname LIKE '%{$searchTermEscaped}%'
-				/* OR location LIKE '%{$searchTermEscaped}%' */
-				OR category LIKE '%{$searchTermEscaped}%'
-				/* OR itnumber LIKE '%{$searchTermEscaped}%' */
-				OR details LIKE '%{$searchTermEscaped}%'
-				OR reply LIKE '%{$searchTermEscaped}%'
-				OR internalNotes LIKE '%{$searchTermEscaped}%'
+			(	   subject LIKE :searchTerm
+				OR calls.id = :searchId
+				OR calls.username LIKE :searchTerm
+				OR people.forename LIKE :searchTerm
+				OR people.surname LIKE :searchTerm
+				/* OR location LIKE :searchTerm */
+				OR category LIKE :searchTerm
+				/* OR itnumber LIKE :searchTerm */
+				OR details LIKE :searchTerm
+				OR reply LIKE :searchTerm
+				OR internalNotes LIKE :searchTerm
 			)";
 		}
 		
@@ -879,7 +896,8 @@ class helpdesk extends frontControllerApplication
 			FROM {$this->settings['table']}
 			LEFT OUTER JOIN {$this->settings['database']}.categories ON {$this->settings['table']}.categoryId = categories.id
 			LEFT OUTER JOIN {$this->settings['peopleDatabase']}.people ON {$this->settings['table']}.username = people.username
-			WHERE " . implode (' AND ', $constraints);
+			" . ($constraints ? 'WHERE ' . implode (' AND ', $constraints) : '') . '
+		;';
 		
 		# End the SQL query by specifying the order
 		$listMostRecentFirst = ($listMostRecentFirst || $this->settings['listMostRecentFirst'] && !$this->userIsAdministrator);
@@ -887,7 +905,7 @@ class helpdesk extends frontControllerApplication
 		
 		# Execute the query and obtain an array of problems from it; if there are none, state so
 		#!# If there are no current calls it is impossible to get previous calls because of the 'else' block here
-		if (!$calls = $this->databaseConnection->getData ($query)) {
+		if (!$calls = $this->databaseConnection->getData ($query, false, true, $preparedStatementValues)) {
 			if ($callId) {
 				$html = "\n<p>The call you specified is either not valid, resolved a while ago, or you do not have rights to see it.</p>";
 			} else {
