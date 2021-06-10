@@ -18,7 +18,8 @@
 	# Main application directives
 	RewriteEngine on
 	RewriteRule ^$applicationBaseUrl/(details|report|statistics).html$ $applicationBaseUrl/index.html?action=$1 [L]
-	RewriteRule ^$applicationBaseUrl/(calls|search)/$ $applicationBaseUrl/index.html?action=$1 [L]
+	RewriteRule ^$applicationBaseUrl/(calls)/$ $applicationBaseUrl/index.html?action=$1 [L]
+	RewriteRule ^$applicationBaseUrl/(search)/$ $applicationBaseUrl/index.html?action=$1 [L,QSA]
 	RedirectMatch Permanent ^$applicationBaseUrl/(calls|search)$ $applicationBaseUrl/$1/
 	RewriteRule ^$applicationBaseUrl/calls/all.html$ $applicationBaseUrl/index.html?action=allcalls [L]
 	RewriteRule ^$applicationBaseUrl/(calls)/([0-9]+)/$ $applicationBaseUrl/index.html?action=call&item=$2 [L]
