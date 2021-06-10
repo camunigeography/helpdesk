@@ -836,6 +836,9 @@ class helpdesk extends frontControllerApplication
 	# Function to show a single call
 	public function call ($callId)
 	{
+		# Start the HTML
+		$html = '';
+		
 		# Ensure a supplied call number is numeric
 		if (!$callId || !is_numeric ($callId)) {
 			$html = "\n<p class=\"warning\">Error: The call number must be numeric.</p>";
@@ -850,8 +853,11 @@ class helpdesk extends frontControllerApplication
 			return false;
 		}
 		
+		# Link back to all calls
+		$html .= "\n<p><a href=\"{$this->baseUrl}/calls/" . ($this->userIsAdministrator ? "#call{$callId}" : '') . "\">&laquo; Return to the list of all calls</a></p>";
+		
 		# Render the call
-		$html = $this->renderCalls ($calls, $callId);
+		$html .= $this->renderCalls ($calls, $callId);
 		
 		# Show the HTML
 		echo $html;
@@ -878,9 +884,7 @@ class helpdesk extends frontControllerApplication
 		}
 		
 		# Construct the HTML
-		if ($callId) {
-			$html .= "\n<p><a href=\"{$this->baseUrl}/calls/" . ($this->userIsAdministrator ? "#call{$callId}" : '') . "\">&laquo; Return to the list of all calls</a></p>";
-		} else {
+		if (!$callId) {
 			$html .= "\n\n" . (!$limitDate ? '<p class="helpdeskdescription">All items (' . number_format (count ($calls)) . ') ' . ($this->userIsAdministrator ? 'which have been submitted' : 'which you have submitted') . ' are listed below.' : '<p class="helpdeskdescription">Problems ' . ($this->userIsAdministrator ? '' : 'resolved within the last ' . $this->settings['completedJobExpiryDays'] . ' day' . (($this->settings['completedJobExpiryDays'] == 1) ? '' : 's') . ' or ') . 'unresolved (' . count ($calls) . ') are listed below, '. ($this->settings['listMostRecentFirst'] ? 'most recent' : 'earliest') . ' first.') . (strlen ($searchTerm) ? '' : " You can also: " . ($limitDate ? '<a href="' . $this->baseUrl . '/calls/all.html">include any older, resolved items also' : '<a href="' . $this->baseUrl . '/calls/">list only recent/unresolved items') . '</a>.') . '</p>';
 		}
 		
