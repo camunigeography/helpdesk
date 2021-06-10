@@ -1064,8 +1064,7 @@ class helpdesk extends frontControllerApplication
 		}
 		
 		# Format the timestamp
-		require_once ('timedate.php');
-		$call['timeSubmitted'] = timedate::convertTimestamp ($call['timeSubmitted']);
+		$call['timeSubmitted'] = date ('l jS M Y, g.ia', strtotime ($call['timeSubmitted']));
 		
 		# Remove double line-breaks in the reply
 		$call['reply'] = str_replace ("\r\n", "\n", $call['reply']);
