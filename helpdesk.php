@@ -884,9 +884,6 @@ class helpdesk extends frontControllerApplication
 			$html .= "\n\n" . (!$limitDate ? '<p class="helpdeskdescription">All items (' . number_format (count ($calls)) . ') ' . ($this->userIsAdministrator ? 'which have been submitted' : 'which you have submitted') . ' are listed below.' : '<p class="helpdeskdescription">Problems ' . ($this->userIsAdministrator ? '' : 'resolved within the last ' . $this->settings['completedJobExpiryDays'] . ' day' . (($this->settings['completedJobExpiryDays'] == 1) ? '' : 's') . ' or ') . 'unresolved (' . count ($calls) . ') are listed below, '. ($this->settings['listMostRecentFirst'] ? 'most recent' : 'earliest') . ' first.') . (strlen ($searchTerm) ? '' : " You can also: " . ($limitDate ? '<a href="' . $this->baseUrl . '/calls/all.html">include any older, resolved items also' : '<a href="' . $this->baseUrl . '/calls/">list only recent/unresolved items') . '</a>.') . '</p>';
 		}
 		
-		# Determine whether this is the listing mode (i.e. calls page for admins only)
-		$fullListing = ($this->userIsAdministrator && $this->action == 'calls');
-		
 		# Loop through the results and add on the call information HTML
 		$callsBoxes = array ();
 		foreach ($calls as $call) {
@@ -900,6 +897,9 @@ class helpdesk extends frontControllerApplication
 			$callsBoxes[$id]  = $this->callHtml ($call, $userHasEditRights, ($userHasEditRights && $callId), $minimised = true);
 		}
 		
+		# Determine whether this is the listing mode (i.e. calls page for admins only)
+		$fullListing = ($this->userIsAdministrator && $this->action == 'calls');
+		
 		# Compile the calls HTML structure
 		$panels = array ();
 		foreach ($calls as $call) {
@@ -912,23 +912,32 @@ class helpdesk extends frontControllerApplication
 		if ($callId) {
 			$html .= implode ($panels);
 		} else {
-			
-			# Determine the items to expand
-			$expandState = ($this->userIsAdministrator ? $this->administrators[$this->user]['state'] : false);
-			
-			# Only save the state when on the full listing (not a partial listing) and the user is an administrator
-			$saveState = ($this->userIsAdministrator && $fullListing);
-			
-			# Convert the panels to an expandable listing
-			require_once ('jquery.php');
-			$jQuery = new jQuery ($this->databaseConnection, "{$this->baseUrl}/data.html", $_SERVER['REMOTE_USER']);
-			$jQuery->expandable ($panels, $expandState, $saveState);
-			$html .= $jQuery->getHtml ();
-			
-			# Stop jQuery being reloaded
-			#!# Bit hacky this
-			$this->jQueryLoaded = true;
+			$html .= $this->callsExpandableUi ($panels);
 		}
+		
+		# Return the HTML
+		return $html;
+	}
+	
+	
+	# Function to render calls in an expandable UI
+	private function callsExpandableUi ($panels)
+	{
+		# Determine the items to expand
+		$expandState = ($this->userIsAdministrator ? $this->administrators[$this->user]['state'] : false);
+		
+		# Only save the state when on the full listing (not a partial listing) and the user is an administrator
+		$saveState = ($this->userIsAdministrator && $this->action == 'calls');
+		
+		# Convert the panels to an expandable listing
+		require_once ('jquery.php');
+		$jQuery = new jQuery ($this->databaseConnection, "{$this->baseUrl}/data.html", $_SERVER['REMOTE_USER']);
+		$jQuery->expandable ($panels, $expandState, $saveState);
+		$html = $jQuery->getHtml ();
+		
+		# Stop jQuery being reloaded
+		#!# Bit hacky this
+		$this->jQueryLoaded = true;
 		
 		# Return the HTML
 		return $html;
