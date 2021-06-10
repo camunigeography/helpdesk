@@ -555,14 +555,7 @@ class helpdesk extends frontControllerApplication
 		$callId = ($editCall ? $result['id'] : $this->databaseConnection->getLatestId ());
 		
 		# Move the image to its final URL
-		if ($image) {
-			$extension = pathinfo ($image, PATHINFO_EXTENSION);
-			$imageFileOriginal = $_SERVER['DOCUMENT_ROOT'] . $this->baseUrl . '/images/' . $image;
-			$imageFilenameNew = $callId . '-1' . '.' . $extension;		// e.g. 122-1.png for call #122
-			$imageFileNew   = $_SERVER['DOCUMENT_ROOT'] . $this->baseUrl . '/images/' . $imageFilenameNew;
-			rename ($imageFileOriginal, $imageFileNew);
-			$this->databaseConnection->update ($this->settings['database'], $this->settings['table'], array ('imageFile' => $imageFilenameNew), array ('id' => $callId));
-		}
+		$this->moveImage ($image, $callId);
 		
 		# If the administrator's reply has entered/changed, e-mail the user
 		if ($editCall && $this->userIsAdministrator && ($editCall['reply'] != $result['reply'])) {
@@ -575,6 +568,28 @@ class helpdesk extends frontControllerApplication
 		
 		# Return the HTML
 		return $html;
+	}
+	
+	
+	# Function to move an image
+	private function moveImage ($image, $callId)
+	{
+		# No action if no image
+		if (!$image) {return;}
+		
+		# Determine the original image location
+		$imageFileOriginal = $_SERVER['DOCUMENT_ROOT'] . $this->baseUrl . '/images/' . $image;
+		
+		# Determine the target location
+		$extension = pathinfo ($image, PATHINFO_EXTENSION);
+		$imageFilenameNew = $callId . '-1' . '.' . $extension;		// e.g. 122-1.png for call #122
+		$imageFileNew = $_SERVER['DOCUMENT_ROOT'] . $this->baseUrl . '/images/' . $imageFilenameNew;
+		
+		# Move the image into place
+		rename ($imageFileOriginal, $imageFileNew);
+		
+		# Update the database state for this call
+		$this->databaseConnection->update ($this->settings['database'], $this->settings['table'], array ('imageFile' => $imageFilenameNew), array ('id' => $callId));
 	}
 	
 	
