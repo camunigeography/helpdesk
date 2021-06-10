@@ -811,6 +811,13 @@ class helpdesk extends frontControllerApplication
 		# Get the list of calls
 		$html = $this->listCalls ($callId);
 		
+		# Ensure a supplied call number is numeric
+		if (!$callId || !is_numeric ($callId)) {
+			$html = "\n<p class=\"warning\">Error: The call number must be numeric.</p>";
+			echo $html;
+			return false;
+		}
+		
 		# Show the HTML
 		echo $html;
 	}
@@ -821,12 +828,6 @@ class helpdesk extends frontControllerApplication
 	{
 		# Start the HTML
 		$html = '';
-		
-		# Ensure a supplied call number is numeric
-		if ($callId && !is_numeric ($callId)) {
-			$html = "\n<p class=\"warning\">Call numbers must be numeric.</p>";
-			return $html;
-		}
 		
 		# Define query limitations
 		$constraints = array ('1=1');
