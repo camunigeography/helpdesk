@@ -957,7 +957,7 @@ class helpdesk extends frontControllerApplication
 		
 		# Limit by date if required
 		if ($limitDate && !$callId) {
-			$expirySeconds = ($this->settings['completedJobExpiryDays'] *  24 * 60 * 60);
+			$expirySeconds = ($this->settings['completedJobExpiryDays'] * 24 * 60 * 60);
 			$constraints[] = "(currentStatus != 'completed'" . (!$callId && $this->userIsAdministrator ? ')' : " OR ((UNIX_TIMESTAMP(NOW()) - UNIX_TIMESTAMP(timeCompleted) < {$expirySeconds}) AND currentStatus = 'completed'))");
 		}
 		
@@ -1046,16 +1046,17 @@ class helpdesk extends frontControllerApplication
 	{
 		# Start the HTML
 		$html  = '';
+		
+		# Not if the call is marked as resolved
 		if ($call['currentStatus'] == 'completed') {
 			$html .= '<p class="warning">Note: this call below has been marked as resolved.</p>';
 		}
 		
-		# Evaluate whether the call is editable; a call is editable if the currentStatus is not complete or the currentStatus is complete but the time difference is < $this->settings['completedJobExpiryDays'] days
-		#!# Ideally this would somehow be done as merged with the above, but that might require two separate SQL lookups and merging/demerging them
-		$userHasEditRights = (($call['currentStatus'] != 'completed') || (((strtotime (date ('Y-m-d')) - strtotime ($call['timeCompleted'])) < ($this->settings['completedJobExpiryDays'] * 24 * 60 * 60)) && ($call['currentStatus'] == 'completed')));
+		# Evaluate whether the call is editable
+		$callIsEditable = $this->callIsEditable ($call);
 		
 		# Determine if in edit mode
-		$editMode = ($userHasEditRights && $this->action == 'call');
+		$editMode = ($callIsEditable && $this->action == 'call');
 			
 		# If editing is required, hand off to the call submission method
 		if ($editMode) {
@@ -1094,7 +1095,7 @@ class helpdesk extends frontControllerApplication
 		$headings = array (
 			'building'		=> 'Building:',
 			'room'			=> 'Room:',
-			'details'		=> ($userHasEditRights ? "<a class=\"actions\" href=\"{$this->baseUrl}/calls/{$call['id']}/\"><img src=\"/images/icons/pencil.png\" alt=\"\" class=\"icon\" /> <strong>Edit</strong></a>" : ''),
+			'details'		=> ($callIsEditable ? "<a class=\"actions\" href=\"{$this->baseUrl}/calls/{$call['id']}/\"><img src=\"/images/icons/pencil.png\" alt=\"\" class=\"icon\" /> <strong>Edit</strong></a>" : ''),
 			'category'		=> 'Category:',
 			'currentStatus'	=> 'Current status:',
 			'reply'			=> "Reply from {$this->settings['type']} staff:",
@@ -1105,6 +1106,29 @@ class helpdesk extends frontControllerApplication
 		
 		# Return the HTML
 		return $html;
+	}
+	
+	
+	# Function to determine if a call is editable
+	#!# Ideally this would somehow be done as merged in the main query, but that might require two separate SQL lookups and merging/demerging them
+	private function callIsEditable ($call)
+	{
+		# The call is editable if the status is not complete
+		if ($call['currentStatus'] != 'completed') {
+			return true;
+		}
+		
+		# The call is editable if completed recently
+		if ($call['currentStatus'] == 'completed') {
+			$secondsSinceCompleted = strtotime (date ('Y-m-d')) - strtotime ($call['timeCompleted']);
+			$expirySeconds = ($this->settings['completedJobExpiryDays'] * 24 * 60 * 60);
+			if ($secondsSinceCompleted < $expirySeconds) {
+				return true;
+			}
+		}
+		
+		# Not editable
+		return false;
 	}
 	
 	
