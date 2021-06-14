@@ -408,7 +408,80 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Report form
-	private function reportForm ($editCall = false)
+	private function reportForm ()
+	{
+		# Start the HTML
+		$html  = '';
+		
+		# Create the call reporting form
+		$this->loadJquery ();
+		$form = new form (array (
+			'formCompleteText' => false,
+			'databaseConnection' => $this->databaseConnection,
+			'div' => 'ultimateform horizontalonly helpdeskcall',
+			'cols' => $this->settings['cols'],
+			'unsavedDataProtection' => true,
+			'jQuery' => false,
+			'uploadThumbnailWidth' => 300,
+			'uploadThumbnailHeight' => 80,
+			'displayRestrictions' => false,
+		));
+		
+		# Determine which fields to display; admins should also be able to set the username
+		$includeOnly = array ('subject', 'categoryId', 'building', 'room', 'details', 'imageFile', 'location', 'itnumber', );	// Fields like location and itnumber may be installation-specific but will be ignored if not present
+		if ($this->userIsAdministrator) {array_unshift ($includeOnly, 'username');}
+		
+		# Databind the form
+		$form->dataBinding (array (
+			'database' => $this->settings['database'],
+			'table' => $this->settings['table'],
+			'lookupFunction' => array ('database', 'lookup'),
+			'lookupFunctionParameters' => array (NULL, false, true, false, $firstOnly = true),
+			'includeOnly' => $includeOnly,
+			'attributes' => array (
+				'subject' => array ('autofocus' => true, ),
+				'location' => array ('disallow' => '(http|https)://', ),
+				'imageFile' => array ('directory' => $_SERVER['DOCUMENT_ROOT'] . $this->baseUrl . '/images/', 'forcedFileName' => application::generatePassword (8, false), 'allowedExtensions' => array ('jpg', 'jpeg', 'png', 'gif'), 'lowercaseExtension' => true, 'required' => false, 'thumbnail' => true, 'flatten' => true, 'previewLocationPrefix' => "{$this->baseUrl}/images/", 'thumbnailExpandable' => true, ),
+				'username' => array ('type' => 'select', 'values' => $this->userList (true), 'description' => "This box is shown only to {$this->settings['type']} staff.", 'default' => $this->user, ),
+				'categoryId' => array ('values' => $this->getCategories ($omitHidden = true), ),	// New calls have older categories hidden
+			),
+			'simpleJoin' => true,
+			'intelligence' => true,
+		));
+		
+		# Return the result
+		if (!$result = $form->process ($html)) {return $html;}
+		
+		# Add fixed values
+		$result['timeSubmitted'] = 'NOW()';
+		$result['administratorId'] = '';
+		$result['reply'] = '';
+		if (!$this->userIsAdministrator) {
+			$result['username'] = $this->user;
+		}
+		
+		# Save the call data
+		if (!$callId = $this->saveCall (false, $result, $html /* amended by reference */)) {
+			echo $html;
+			return false;
+		}
+		
+		# Confirm the call has been submitted
+		$html .= "\n<p><strong>Many thanks; your details have been submitted.</strong> " . ucfirst ($this->settings['type']) . ' staff will be in contact in due course.</p>';
+		
+		# Give link to menu
+		$html .= "\n<p>You can use the menu above to perform additional tasks or <a href=\"{$this->baseUrl}/logout.html\">log out</a> if you have finished.</p>";
+		
+		# If it is a new call, or the user's submission has changed, e-mail the admin
+		$html .= $this->mailCallAdmin ($callId, $result);
+		
+		# Return the HTML
+		return $html;
+	}
+	
+	
+	# Response form
+	private function responseForm ($editCall = false)
 	{
 		# Start the HTML
 		$html  = '';
@@ -660,7 +733,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Function to e-mail the admin details of a call
-	private function mailCallAdmin ($callId, $result, $editCall)
+	private function mailCallAdmin ($callId, $result, $editCall = false)
 	{
 		# Start the HTML
 		$html = '';
@@ -944,7 +1017,7 @@ class helpdesk extends frontControllerApplication
 		
 		# If editing is required, hand off to the call submission method
 		if ($this->callIsEditable ($call)) {
-			$html .= $this->reportForm ($call['id']);
+			$html .= $this->responseForm ($call['id']);
 			echo $html;
 			return;
 		}
