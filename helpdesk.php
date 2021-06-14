@@ -481,8 +481,19 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Response form
-	private function responseForm ($editCall = false)
+	private function responseForm ($callId)
 	{
+		# Get the call data in unamended form
+		$editCall = $this->databaseConnection->selectOne ($this->settings['database'], $this->settings['table'], $data = array ('id' => $callId));
+		
+		# If an admin, mark the call as having been opened, if not already done
+		#!# This is a misfeature that should just be removed entirely - another admin could just be browsing and this will then get set
+		if ($this->userIsAdministrator) {
+			if (!$editCall['timeOpened']) {
+				$result = $this->databaseConnection->update ($this->settings['database'], $this->settings['table'], $data = array ('timeOpened' => 'NOW()'), $conditions = array ('id' => $editCall['id']));
+			}
+		}
+		
 		# Start the HTML
 		$html  = '';
 		
@@ -491,70 +502,52 @@ class helpdesk extends frontControllerApplication
 		$form = new form (array (
 			'formCompleteText' => false,
 			'databaseConnection' => $this->databaseConnection,
-			'div' => 'ultimateform horizontalonly helpdeskcall' . ($editCall && $this->userIsAdministrator ? ' editable' : ''),
+			'div' => 'ultimateform horizontalonly helpdeskcall' . ($this->userIsAdministrator ? ' editable' : ''),
 			'cols' => $this->settings['cols'],
 			'unsavedDataProtection' => true,
 			'jQuery' => false,
-			'uploadThumbnailWidth' => ($editCall ? 300 : 300),
-			'uploadThumbnailHeight' => ($editCall ? 300 : 80),
+			'uploadThumbnailWidth' => 300,
+			'uploadThumbnailHeight' => 300,
 			'displayRestrictions' => false,
 		));
 		
-		# Determine which fields to display; admins should also be able to set the username
-		$includeOnly = array ('subject', 'categoryId', 'building', 'room', 'details', 'imageFile', 'location', 'itnumber', );	// Fields like location and itnumber may be installation-specific but will be ignored if not present
-		if ($this->userIsAdministrator) {array_unshift ($includeOnly, 'username');}
-		if ($editCall) {array_unshift ($includeOnly, 'id');}
-		
-		# Get the data if in editing mode, even if most of it is not used
-		if ($editCall) {
-			$data = $this->databaseConnection->select ($this->settings['database'], $this->settings['table'], $data = array ('id' => $editCall));
-			$editCall = $data[$editCall];
-		}
-		
-		# In editing mode, instead show all fields for the administrator and pre-fill the data
+		# Determine which fields to display
+		$includeOnly = array ('id', 'subject', 'categoryId', 'building', 'room', 'details', 'imageFile', 'location', 'itnumber', );	// Fields like location and itnumber may be installation-specific but will be ignored if not present
 		$exclude = array ();
-		if ($this->userIsAdministrator && $editCall) {
-			
+		if ($this->userIsAdministrator) {
 			$includeOnly = false;
 			$exclude = array ('timeOpened', 'timeCompleted', 'timeSubmitted', 'lastUpdated', );
-			
-			# Mark the call as having been opened
-			if (empty ($editCall['timeOpened'])) {
-				$result = $this->databaseConnection->update ($this->settings['database'], $this->settings['table'], $data = array ('timeOpened' => 'NOW()'), $conditions = array ('id' => $editCall['id']));
-			}
-			
-			if (!$editCall['administratorId']) {
-				$editCall['administratorId'] = $this->user;
-			}
 		}
 		
 		# Define form overloading attributes; some of these are used only in editing mode, but are otherwise ignored if in submission mode
 		$attributes = array (
 			'id' => array ('editable' => false),
 			'subject' => array ('autofocus' => true, ),
-			'details' => array ('editable' => (!$editCall || ($editCall && !$this->userIsAdministrator))),
+			'details' => array ('editable' => !$this->userIsAdministrator, ),
 			'location' => array ('disallow' => '(http|https)://', ),
-			// 'administratorId' => array ('editable' => false, 'default' => $this->user),
 			#!# Support for ultimateForm->select():regexp needed
-			'currentStatus' => array ('default' => ($this->userIsAdministrator && $editCall ? ($editCall['currentStatus'] == 'submitted' ? '' : $editCall['currentStatus']) : ''), 'disallow' => ($this->userIsAdministrator && $editCall ? 'submitted' : '')),	// The currentStatus is deliberately wiped so that the admin remembers to change it
+			'currentStatus' => array ('default' => ($this->userIsAdministrator ? ($editCall['currentStatus'] == 'submitted' ? '' : $editCall['currentStatus']) : ''), 'disallow' => ($this->userIsAdministrator ? 'submitted' : '')),	// The currentStatus is deliberately wiped so that the admin remembers to change it
 			'reply'			=> array (/*'required' => true,*/ 'description' => 'NOTE: making changes in this box will result in an e-mail being sent to the user.'),
-			'imageFile' => array ('directory' => $_SERVER['DOCUMENT_ROOT'] . $this->baseUrl . '/images/', 'forcedFileName' => application::generatePassword (8, false), 'allowedExtensions' => array ('jpg', 'jpeg', 'png', 'gif'), 'lowercaseExtension' => true, 'required' => false, 'thumbnail' => true, 'flatten' => true, 'editable' => (!$editCall), 'previewLocationPrefix' => "{$this->baseUrl}/images/", 'thumbnailExpandable' => true, ),
+			'imageFile' => array ('directory' => $_SERVER['DOCUMENT_ROOT'] . $this->baseUrl . '/images/', 'forcedFileName' => application::generatePassword (8, false), 'allowedExtensions' => array ('jpg', 'jpeg', 'png', 'gif'), 'lowercaseExtension' => true, 'required' => false, 'thumbnail' => true, 'flatten' => true, 'editable' => false, 'previewLocationPrefix' => "{$this->baseUrl}/images/", 'thumbnailExpandable' => true, ),
+			'categoryId' => array ('values' => $this->getCategories ()),
 		);
+		
+		# If an admin, default the administrator username if not yet set
 		if ($this->userIsAdministrator) {
-			$attributes['username'] = array (
-				'type' => 'select',
-				'editable' => (!$editCall),
-				'values' => $this->userList ($limitToActiveOnly = (!$editCall)),
-				'description' => "This box is shown only to {$this->settings['type']} staff.",
-			);
-			if ($this->userIsAdministrator && !$editCall) {
-				$attributes['username']['default'] = $this->user;
+			if (!$editCall['administratorId']) {
+				$attributes['administratorId'] = array ('default' => $this->user);
 			}
 		}
 		
-		# Get categories, ordered by list priority; for new calls, omit categories marked as hidden, and otherwise show all
-		$categories = $this->getCategories ($omitHidden = (!$editCall));
-		$attributes['categoryId'] = array ('values' => $categories);
+		# Admins can create a call on behalf of another user, so make the user field into an editable list
+		if ($this->userIsAdministrator) {
+			$attributes['username'] = array (
+				'type' => 'select',
+				'editable' => false,
+				'values' => $this->userList (),
+				'description' => "This box is shown only to {$this->settings['type']} staff.",
+			);
+		}
 		
 		# Databind the form
 		$form->dataBinding (array (
@@ -565,19 +558,19 @@ class helpdesk extends frontControllerApplication
 			'includeOnly' => $includeOnly,
 			'exclude' => $exclude,
 			'attributes' => $attributes,
-			'data' => $editCall,	// Will either be false (i.e. submission mode) or contain the data (i.e. editing mode)
+			'data' => $editCall,
 			'simpleJoin' => true,
 			'intelligence' => true,
 		));
-		if ($editCall) {
-			$form->input (array (
-				'name' => 'lastUpdated',
-				'title' => 'Time of creation / last update',
-				'editable' => false,
-				'discard' => true,
-				'default' => $editCall['lastUpdated'],
-			));
-		}
+		
+		# Display the last update time
+		$form->input (array (
+			'name' => 'lastUpdated',
+			'title' => 'Time of creation / last update',
+			'editable' => false,
+			'discard' => true,
+			'default' => $editCall['lastUpdated'],
+		));
 		
 		# Return the result
 		if (!$result = $form->process ($html)) {return $html;}
@@ -587,42 +580,26 @@ class helpdesk extends frontControllerApplication
 			$result['username'] = $this->user;
 		}
 		
-		# Log the call submission time
-		if (!$editCall) {
-			$result['timeSubmitted'] = 'NOW()';
-		}
-		
 		# Close the call by adding the completion time if required
-		if ($this->userIsAdministrator && $editCall && $result['currentStatus'] == 'completed') {
+		if ($this->userIsAdministrator && $result['currentStatus'] == 'completed') {
 			$result['timeCompleted'] = 'NOW()';
 		}
 		
-		# Add default values
-		if (!$editCall) {
-			$result['administratorId'] = '';
-			$result['reply'] = '';
-		}
-		
 		# Save the call data
-		if (!$callId = $this->saveCall ($editCall, $result, $html /* amended by reference */)) {
+		if (!$callId = $this->saveCall (true, $result, $html /* amended by reference */)) {
 			echo $html;
 			return false;
 		}
 		
 		# Confirm the call has been submitted
-		$html .= "\n<p>" . ($editCall ? 'Many thanks; the call has been updated.' : '<strong>Many thanks; your details have been submitted.</strong> ' . ucfirst ($this->settings['type']) . ' staff will be in contact in due course.') . '</p>';
-		
-		# Give link to menu if a call has been newly added
-		if (!$editCall) {
-			$html .= "\n<p>You can use the menu above to perform additional tasks or <a href=\"{$this->baseUrl}/logout.html\">log out</a> if you have finished.</p>";
-		}
+		$html .= "\n<p>Many thanks; the call has been updated.</p>";
 		
 		# If the administrator's reply has entered/changed, e-mail the user
-		if ($editCall && $this->userIsAdministrator && ($editCall['reply'] != $result['reply'])) {
+		if ($this->userIsAdministrator && ($editCall['reply'] != $result['reply'])) {
 			$html .= $this->mailCallUser ($callId, $result, $editCall, $user);
 			
-		# If it is a new call, or the user's submission has changed, e-mail the admin
-		} else if (!$editCall || ($editCall && ($editCall['details'] != $result['details']))) {
+		# Otherwise, if the user's submission has changed, e-mail the admin
+		} else if ($editCall['details'] != $result['details']) {
 			$html .= $this->mailCallAdmin ($callId, $result, $editCall);
 		}
 		

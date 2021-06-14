@@ -3,7 +3,6 @@
 #helpdesk table.helpdeskcall {width: 100%; max-width: 800px;}
 #helpdesk table.helpdeskcall .key {width: 8em; text-align: right;}
 #helpdesk p.helpdeskdescription {margin-bottom: 4em;}
-#helpdesk div.helpdeskcall.editable tr.subject input, #helpdesk div.helpdeskcall.editable tr.location input, #helpdesk div.helpdeskcall.editable tr.itnumber input, #helpdesk div.helpdeskcall.editable tr.problemarea__JOIN__helpdesk__problemareas__reserved select {color: #333;}
 #helpdesk div.helpdeskcall table td *:focus {background-color: #f3f3f3;}
 #helpdesk ul.tabs li a {padding-bottom: 2px;}
 #helpdesk h2 span, #helpdesk h3 span.resolved {font-size: 10px;}
