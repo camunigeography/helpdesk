@@ -56,7 +56,7 @@ class helpdesk extends frontControllerApplication
 				'icon' => 'application_double',
 			),
 			'call' => array (
-				'description' => 'View/edit call',
+				'description' => false,		// Custom header set within the page instead
 				'url' => 'calls/',
 				'usetab' => 'calls',
 			),
@@ -495,7 +495,7 @@ class helpdesk extends frontControllerApplication
 		}
 		
 		# Start the HTML
-		$html  = '';
+		$html  = "\n<h3>Call details</h3>";
 		
 		# Create the call reporting form
 		$this->loadJquery ();
@@ -512,17 +512,15 @@ class helpdesk extends frontControllerApplication
 		));
 		
 		# Determine which fields to display
-		$includeOnly = array ('id', 'subject', 'categoryId', 'building', 'room', 'details', 'imageFile', 'location', 'itnumber', );	// Fields like location and itnumber may be installation-specific but will be ignored if not present
+		$includeOnly = array ('subject', 'categoryId', 'building', 'room', 'details', 'imageFile', 'location', 'itnumber', );	// Fields like location and itnumber may be installation-specific but will be ignored if not present
 		$exclude = array ();
 		if ($this->userIsAdministrator) {
 			$includeOnly = false;
-			$exclude = array ('timeOpened', 'timeCompleted', 'timeSubmitted', 'lastUpdated', );
+			$exclude = array ('id', 'timeOpened', 'timeCompleted', 'timeSubmitted', 'lastUpdated', );
 		}
 		
 		# Define form overloading attributes; some of these are used only in editing mode, but are otherwise ignored if in submission mode
 		$attributes = array (
-			'id' => array ('editable' => false),
-			'subject' => array ('autofocus' => true, ),
 			'details' => array ('editable' => !$this->userIsAdministrator, ),
 			'location' => array ('disallow' => '(http|https)://', ),
 			#!# Support for ultimateForm->select():regexp needed
@@ -971,8 +969,8 @@ class helpdesk extends frontControllerApplication
 	# Function to show a single call
 	public function call ($callId)
 	{
-		# Start the HTML
-		$html = '';
+		# Start the HTML with a heading
+		$html = "\n<h2>View/edit call</h2>";
 		
 		# Ensure a supplied call number is numeric
 		if (!$callId || !is_numeric ($callId)) {
@@ -988,6 +986,9 @@ class helpdesk extends frontControllerApplication
 			return false;
 		}
 		$call = $calls[$callId];
+		
+		# Reset the HTML to start with the call details as a heading
+		$html  = "\n<h2>Call #{$call['id']}:&nbsp; " . htmlspecialchars ($call['subject']) . '</h2>';
 		
 		# Link back to all calls
 		$html .= "\n<p><a href=\"{$this->baseUrl}/calls/" . ($this->userIsAdministrator ? "#call{$callId}" : '') . "\">&laquo; Return to the list of all calls</a></p>";
