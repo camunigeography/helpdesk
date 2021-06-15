@@ -573,6 +573,9 @@ class helpdesk extends frontControllerApplication
 		# Return the result
 		if (!$result = $form->process ($html)) {return $html;}
 		
+		# Add in the call ID
+		$result['id'] = $callId;
+		
 		# Add in the username
 		if (!isSet ($result['username'])) {
 			$result['username'] = $this->user;
