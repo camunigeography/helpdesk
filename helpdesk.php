@@ -716,11 +716,14 @@ class helpdesk extends frontControllerApplication
 		# Start the HTML
 		$html = '';
 		
+		# Construct the user's real name
+		$userRealName = "{$this->userDetails['forename']} {$this->userDetails['surname']}";
+		
 		# Construct the e-mail headers
 		$recipients = $this->getRecipients ();
 		$subject = "[Helpdesk][{$callId}] " . $result['subject'] . ($editCall ? ' (updated)' : '');
-		$headers  = "From: Helpdesk <{$this->settings['administratorEmail']}>\n";
-		$headers .= "Reply-To: \"{$this->userDetails['forename']} {$this->userDetails['surname']}\" <{$this->userDetails['_preferredEmail']}>\n";
+		$headers  = "From: \"{$userRealName} via Helpdesk\" <{$this->settings['administratorEmail']}>\n";
+		$headers .= "Reply-To: \"{$userRealName}\" <{$this->userDetails['_preferredEmail']}>\n";
 		
 		# Construct the message
 		$message  = "\n". 'A support call has been ' . ($editCall ? 'updated' : 'submitted') . '. The details are online at:';
