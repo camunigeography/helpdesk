@@ -986,12 +986,11 @@ class helpdesk extends frontControllerApplication
 		}
 		
 		# Get the call
-		if (!$calls = $this->getCalls ($callId)) {
+		if (!$call = $this->getCalls ($callId)) {
 			$html = "\n<p>The call you specified is either not valid, resolved a while ago, or you do not have rights to see it.</p>";
 			echo $html;
 			return false;
 		}
-		$call = $calls[$callId];
 		
 		# Reset the HTML to start with the call details as a heading
 		$html  = "\n<h2>Call #{$call['id']}:&nbsp; " . htmlspecialchars ($call['subject']) . '</h2>';
@@ -1085,7 +1084,7 @@ class helpdesk extends frontControllerApplication
 	}
 	
 	
-	# Model function to get calls data
+	# Model function to get calls data (or a single call, if a callId is specified)
 	private function getCalls ($callId = false, $limitDate = true, $searchTerm = false, $listMostRecentFirst = false)
 	{
 		# Start constraints
@@ -1163,6 +1162,11 @@ class helpdesk extends frontControllerApplication
 		
 		# Execute the query and obtain an array of problems from it; if there are none, state so
 		$calls = $this->databaseConnection->getData ($query, "{$this->settings['database']}.{$this->settings['table']}", true, $preparedStatementValues);
+		
+		# If a single call is requested, return only that
+		if ($callId) {
+			return $calls[$callId];
+		}
 		
 		# Return the data
 		return $calls;
