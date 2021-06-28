@@ -26,6 +26,8 @@ class helpdesk extends frontControllerApplication
 			'totalRecentSearches' => 7,	// Number of recent searches to display
 			'apiUsername'			=> false,		// Optional API access
 			'tabUlClass' => 'tabsflat',
+			'callsEmail' => NULL,		// Address for incoming/outgoing e-mail for calls
+			'pearLocation' => false,		// If not already in the include_path, e.g. '/usr/share/php/' for Debian/Ubuntu
 		);
 		
 		# Return the defaults
@@ -90,6 +92,11 @@ class helpdesk extends frontControllerApplication
 				'parent' => 'admin',
 				'subtab' => 'Categories',
 				'icon' => 'text_list_bullets',
+			),
+			'ingestmail' => array (
+				'description' => 'Incoming e-mail gateway',
+				'url' => false,
+				'export' => true,
 			),
 		);
 		
@@ -1650,6 +1657,49 @@ class helpdesk extends frontControllerApplication
 		return $html;
 	}
 	*/
+	
+	
+	# Incoming mail gateway
+	public function ingestmail ()
+	{
+		# Load the mail importer and decode the mail
+		require_once ('importMail.php');
+		$importMail = new importMail ($this->settings['pearLocation']);
+		list ($from, $subject, $time, $message, $attachments) = $importMail->main ($simplifyFrom = true);
+		
+		# Extract the call ID from the subject line
+		if (!preg_match ('/\[Helpdesk\]\[([0-9]+)\].*/', $subject, $matches)) {
+			return false;
+			#!# Return bounce
+		}
+		$callId = $matches[1];
+		
+		# Validate the call by getting it from the database
+		if (!$call = $this->getCalls ($callId)) {
+			#!# Issue bounce
+			return false;
+		}
+		
+		# Extract the username from the from address
+		$fromUsername = preg_replace ("/@{$this->settings['emailDomain']}$/", '', $from);
+		
+		# For security, ensure the from address matches the call user or any admin
+		$validUsers = array_keys ($this->administrators);
+		$validUsers[] = $call['username'];
+		if (!in_array ($fromUsername, $validUsers)) {
+			#!# Issue bounce, stating that it should be from the official domain
+			return false;
+		}
+		
+		# Set the user environment properties following validation, for use in the reply message
+		$this->user = $fromUsername;
+		$this->userDetails = $this->userDetails ();
+		$this->userVisibleIdentifier = $this->user;
+		$this->userIsAdministrator = $this->userIsAdministrator ();
+		
+		# Add the message (and send e-mail)
+		$this->addMessage ($callId, $message, $from, $attachments);
+	}
 	
 	
 	# API call for dashboard

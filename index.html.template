@@ -1,12 +1,32 @@
 <?php
 
+# NB For mail ingesting, there should be an /etc/aliases entry as follows:
+# helpdesk: | php /path/to/helpdesk/index.html ingestmail
+
+# Important: This can be run in a shell context, so line endings must be correct
+
+
 # Define the settings
 $settings = array (
 	'username'		=> 'the_password',
 	'h1'			=> '<h1>IT helpdesk</h1>',
 	'institution'	=> 'Widgets',
 	'type'			=> 'computing',
+	'callsEmail'	=> 'helpdesk@example.com',		// Must match what is in /etc/aliases
 );
+
+
+# Additional environment settings for shell context (for ingestmail)
+if (PHP_SAPI == 'cli') {
+	
+	# Set the standard include path
+	$includePath = __DIR__ . ':/path/to/helpdesk/:/path/to/php/libraries/';
+	ini_set ('include_path', $includePath);
+	
+	# Set other environment settings
+	$_SERVER['SERVER_ADMIN'] = 'webmaster@geog.cam.ac.uk';
+}
+
 
 # Run the application with the specified settings
 require_once ('helpdesk.php');
