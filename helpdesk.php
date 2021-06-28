@@ -528,6 +528,7 @@ class helpdesk extends frontControllerApplication
 			'reply'			=> array (/*'required' => true,*/ 'description' => 'NOTE: making changes in this box will result in an e-mail being sent to the user.'),
 			'imageFile' => array ('directory' => $_SERVER['DOCUMENT_ROOT'] . $this->baseUrl . '/images/', 'forcedFileName' => application::generatePassword (8, false), 'allowedExtensions' => array ('jpg', 'jpeg', 'png', 'gif'), 'lowercaseExtension' => true, 'required' => false, 'thumbnail' => true, 'flatten' => true, 'editable' => false, 'previewLocationPrefix' => "{$this->baseUrl}/images/", 'thumbnailExpandable' => true, ),
 			'categoryId' => array ('values' => $this->getCategories ()),
+			'internalNotes' => array ('rows' => 3, ),
 		);
 		
 		# If an admin, default the administrator username if not yet set
