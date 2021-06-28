@@ -460,8 +460,8 @@ class helpdesk extends frontControllerApplication
 			$result['username'] = $this->user;
 		}
 		
-		# Save the call data
-		if (!$callId = $this->saveCall (false, $result, $html /* amended by reference */)) {
+		# Save the call
+		if (!$callId = $this->saveCall ($result, false, $html /* amended by reference */)) {
 			echo $html;
 			return false;
 		}
@@ -588,10 +588,9 @@ class helpdesk extends frontControllerApplication
 			$result['timeCompleted'] = 'NOW()';
 		}
 		
-		# Save the call data
-		if (!$callId = $this->saveCall (true, $result, $html /* amended by reference */)) {
-			echo $html;
-			return false;
+		# Save the call
+		if (!$callId = $this->saveCall ($result, true, $html /* amended by reference */)) {
+			return $html;
 		}
 		
 		# Confirm the call has been submitted
@@ -611,26 +610,26 @@ class helpdesk extends frontControllerApplication
 	}
 	
 	
-	# Function to save the call data
-	private function saveCall ($editCall, $result, &$html)
+	# Function to save the call
+	private function saveCall ($result, $isUpdate, &$html)
 	{
 		# Move the image to its final URL
 		#!# Not clear why this doesn't apply for adding a call
 		$imageFile = false;
-		if (!$editCall) {
+		if (!$isUpdate) {
 			$imageFile = $result['imageFile'];
 			unset ($result['imageFile']);
 		}
 		
 		# Add/update the new call
-		$function = ($editCall ? 'update' : 'insert');
-		if (!$this->databaseConnection->$function ($this->settings['database'], $this->settings['table'], $result, ($editCall ? array ('id' => $result['id']) : false), $emptyToNull = false)) {
-			$html .= $this->throwError ('There was a problem ' . ($editCall ? 'updating the call' : 'logging the request') . '.');
+		$function = ($isUpdate ? 'update' : 'insert');
+		if (!$this->databaseConnection->$function ($this->settings['database'], $this->settings['table'], $result, ($isUpdate ? array ('id' => $result['id']) : false), $emptyToNull = false)) {
+			$html .= $this->throwError ('There was a problem ' . ($isUpdate ? 'updating the call' : 'logging the request') . '.');
 			return false;
 		}
 		
 		# Determine the call number
-		$callId = ($editCall ? $result['id'] : $this->databaseConnection->getLatestId ());
+		$callId = ($isUpdate ? $result['id'] : $this->databaseConnection->getLatestId ());
 		
 		# Assemble and insert the message
 		$record = array (
