@@ -157,6 +157,16 @@ class helpdesk extends frontControllerApplication
 			  `internalNotes` text COLLATE utf8mb4_unicode_ci
 			) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 			
+			-- Messages
+			CREATE TABLE `messages` (
+			  `id` int NOT NULL AUTO_INCREMENT COMMENT 'Automatic key',
+			  `callId` int NOT NULL COMMENT 'Call #',
+			  `message` text COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Message',
+			  `email` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'E-mail',
+			  `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Automatic timestamp',
+			  PRIMARY KEY (`id`)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Messages';
+			
 			-- Categories
 			CREATE TABLE `categories` (
 			  `id` int PRIMARY KEY NOT NULL AUTO_INCREMENT,
@@ -472,16 +482,13 @@ class helpdesk extends frontControllerApplication
 		# Give link to menu
 		$html .= "\n<p>You can use the menu above to perform additional tasks or <a href=\"{$this->baseUrl}/logout.html\">log out</a> if you have finished.</p>";
 		
-		# If it is a new call, or the user's submission has changed, e-mail the admin
-		$html .= $this->mailCallAdmin ($callId, $result);
-		
 		# Return the HTML
 		return $html;
 	}
 	
 	
-	# Response form
-	private function responseForm ($callId)
+	# Call metadata editing form
+	private function callMetadataForm ($callId)
 	{
 		# Get the call data in unamended form
 		$editCall = $this->databaseConnection->selectOne ($this->settings['database'], $this->settings['table'], $data = array ('id' => $callId));
@@ -495,16 +502,18 @@ class helpdesk extends frontControllerApplication
 		}
 		
 		# Start the HTML
-		$html  = "\n<h3>Call details</h3>";
+		$html = '';
 		
 		# Create the call reporting form
 		$this->loadJquery ();
 		$form = new form (array (
 			'formCompleteText' => false,
 			'databaseConnection' => $this->databaseConnection,
+			'submitButtonText' => 'Update main call details',
 			'div' => 'ultimateform horizontalonly helpdeskcall' . ($this->userIsAdministrator ? ' editable' : ''),
 			'cols' => $this->settings['cols'],
 			'unsavedDataProtection' => true,
+			'requiredFieldIndicator' => false,
 			'jQuery' => false,
 			'uploadThumbnailWidth' => 300,
 			'uploadThumbnailHeight' => 300,
@@ -516,7 +525,7 @@ class helpdesk extends frontControllerApplication
 		$exclude = array ();
 		if ($this->userIsAdministrator) {
 			$includeOnly = false;
-			$exclude = array ('id', 'timeOpened', 'timeCompleted', 'timeSubmitted', 'lastUpdated', );
+			$exclude = array ('id', 'reply', 'timeOpened', 'timeCompleted', 'timeSubmitted', 'lastUpdated', );
 		}
 		
 		# Define form overloading attributes; some of these are used only in editing mode, but are otherwise ignored if in submission mode
@@ -525,7 +534,6 @@ class helpdesk extends frontControllerApplication
 			'location' => array ('disallow' => '(http|https)://', ),
 			#!# Support for ultimateForm->select():regexp needed
 			'currentStatus' => array ('default' => ($this->userIsAdministrator ? ($editCall['currentStatus'] == 'submitted' ? '' : $editCall['currentStatus']) : ''), 'disallow' => ($this->userIsAdministrator ? 'submitted' : '')),	// The currentStatus is deliberately wiped so that the admin remembers to change it
-			'reply'			=> array (/*'required' => true,*/ 'description' => 'NOTE: making changes in this box will result in an e-mail being sent to the user.'),
 			'imageFile' => array ('directory' => $_SERVER['DOCUMENT_ROOT'] . $this->baseUrl . '/images/', 'forcedFileName' => application::generatePassword (8, false), 'allowedExtensions' => array ('jpg', 'jpeg', 'png', 'gif'), 'lowercaseExtension' => true, 'required' => false, 'thumbnail' => true, 'flatten' => true, 'editable' => false, 'previewLocationPrefix' => "{$this->baseUrl}/images/", 'thumbnailExpandable' => true, ),
 			'categoryId' => array ('values' => $this->getCategories ()),
 			'internalNotes' => array ('rows' => 3, ),
@@ -544,7 +552,6 @@ class helpdesk extends frontControllerApplication
 				'type' => 'select',
 				'editable' => false,
 				'values' => $this->userList (),
-				'description' => "This box is shown only to {$this->settings['type']} staff.",
 			);
 		}
 		
@@ -595,16 +602,9 @@ class helpdesk extends frontControllerApplication
 		}
 		
 		# Confirm the call has been submitted
-		$html .= "\n<p>Many thanks; the call has been updated.</p>";
+		$html .= "\n<p>Many thanks; the call summary has been updated.</p>";
 		
-		# If the administrator's reply has entered/changed, e-mail the user
-		if ($this->userIsAdministrator && ($editCall['reply'] != $result['reply'])) {
-			$html .= $this->mailCallUser ($callId, $result, $editCall, $user);
-			
-		# Otherwise, if the user's submission has changed, e-mail the admin
-		} else if ($editCall['details'] != $result['details']) {
-			$html .= $this->mailCallAdmin ($callId, $result, $editCall);
-		}
+		#!# Ideally this would e-mail changes if the metadata has changed, as per behaviour in previous release
 		
 		# Return the HTML
 		return $html;
@@ -632,16 +632,15 @@ class helpdesk extends frontControllerApplication
 		# Determine the call number
 		$callId = ($isUpdate ? $result['id'] : $this->databaseConnection->getLatestId ());
 		
-		# Assemble and insert the message
-		$record = array (
-			'callId'	=> $callId,
-			'message'	=> $result['details'],
-			'email'		=> $result['username'] . '@' . $this->settings['emailDomain'],
-		);
-		$this->databaseConnection->insert ($this->settings['database'], 'messages', $record);
-		
 		# Move the image to its final URL
+		#!# Eliminate and use $attachments as below instead
 		$this->moveImage ($imageFile, $callId);
+		
+		# Assemble and insert the message
+		if (!$isUpdate) {
+			$from = $result['username'] . '@' . $this->settings['emailDomain'];
+			$this->addMessage ($callId, $result['details'], $from, $attachments = array (), $isUpdate = false);
+		}
 		
 		# Return the call ID
 		return $callId;
@@ -671,28 +670,27 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Function to e-mail call changes to a user
-	private function mailCallUser ($callId, $result, $editCall, $user)
+	private function mailCallReply ($callId, $recipientUsername, $subject, $reply, $originalMessage, $originalMessageTime)
 	{
 		# Start the HTML
 		$html = '';
 		
-		# Get the details of the user
-		$user = $this->userDetails ($result['username']);
+		# Get the details of the recipient user
+		$user = $this->userDetails ($recipientUsername);
 		
 		# Assemble the from string from the user details
 		$from = "\"{$this->userDetails['forename']} {$this->userDetails['surname']}\" <{$this->userDetails['_preferredEmail']}>";
 		
 		# Construct the e-mail headers
 		$recipient = "\"{$user['_fullname']}\" <{$user['_preferredEmail']}>";
-		$subject = "Re: [Helpdesk][{$callId}] " . $result['subject'];
+		$subject = "Re: [Helpdesk][{$callId}] " . $subject;
 		$headers  = "From: {$from}\n";
 		$headers .= 'Cc: ' . $this->getAdminRecipients ($exclude = $this->user);		// Copy the other administrators
-		$date = $editCall['timeSubmitted'];
 		
 		# Construct the message
-		$message  = "\n" . "On {$date}, {$user['_fullname']} wrote:";
-		$message .= "\n" . application::emailQuoting ($editCall['details']);
-		$message .= "\n\n" . stripslashes ($result['reply']);
+		$message  = "\n" . "At {$originalMessageTime}, {$user['_fullname']} wrote:";
+		$message .= "\n" . application::emailQuoting ($originalMessage);
+		$message .= "\n\n" . stripslashes ($reply);
 		$message .= "\n\n\n" . $this->userDetails['forename'];
 		
 		# Send the e-mail
@@ -821,6 +819,235 @@ class helpdesk extends frontControllerApplication
 		
 		# Return the list
 		return $problems;
+	}
+	
+	
+	# Messages UI
+	private function messagesUi ($call)
+	{
+		# Start the HTML
+		$html = '';
+		
+		# Get the messages for this call
+		$messages = $this->getMessages ($call['id']);
+		
+		# Get headings
+		$headings = $this->databaseConnection->getHeadings ($this->settings['database'], 'messages');
+		
+		# Show each existing message
+		$i = 0;
+		foreach ($messages as $id => $message) {
+			$html .= "\n<div class=\"graybox\">";
+			$html .= "\n<p class=\"small right\">" . date ('g.ia, jS F Y', strtotime ($message['createdAt'])) . '</p>';
+			$html .= "\n<h4 id=\"message{$id}\"><a href=\"#message{$id}\">#</a> " . ($i == 0 ? 'Initial request' : 'Reply') . ' from&nbsp; ' . $message['email'] . ':</h4>';
+			$html .= application::formatTextBlock (application::makeClickableLinks ($message['message']));
+			$html .= "\n</div>";
+			$i++;
+		}
+		$latestMessage = $message;
+		
+		# Show flash message from the message form confirmation, if set
+		if (application::getFlashMessage ('confirm')) {
+			$html .= "\n<p id=\"messageadded\">{$this->tick} Your message has been sent.</p>";
+		}
+		
+		# Show message form
+		$html .= "\n<div class=\"graybox\">";
+		$html .= "\n<h4>Add reply:</h4>";
+		$html .= $this->messageForm ($call);
+		$html .= "\n</div>";
+		
+		# Return the HTML
+		return $html;
+	}
+	
+	
+	# Function to get messages for a call
+	private function getMessages ($callId)
+	{
+		# Get the messages
+		return $messages = $this->databaseConnection->select ($this->settings['database'], 'messages', array ('callId' => $callId), array (), true, 'id');
+	}
+	
+	
+	# Function to create a message form
+	private function messageForm ($call)
+	{
+		# Start the HTML
+		$html = '';
+		
+		# Create the form
+		$form = new form (array (
+			'displayRestrictions' => false,
+			'formCompleteText' => false,
+			'databaseConnection' => $this->databaseConnection,
+			'div' => 'ultimateform horizontalonly',
+			'submitButtonText' => 'Send reply',
+		));
+		
+		# Add reply field
+		$form->textarea (array (
+			'name' => 'message',
+			'title' => 'Reply',
+			'cols' => 80,
+			'rows' => 10,
+			'required' => true,
+		));
+		
+		#!# Add attachment support
+		$attachments = array ();
+		
+		# Enable admins to set status
+		if ($this->userIsAdministrator) {
+			$form->select (array (
+				'name' => 'currentStatus',
+				'title' => 'Status',
+				'values' => array_keys ($this->currentStatusDefinitions),
+				'default' => $call['currentStatus'],
+				'required' => true,
+			));
+		}
+		
+		# Obtain the result
+		if (!$result = $form->process ($html)) {
+			return $html;
+		}
+		
+		# Update the status if required
+		if ($this->userIsAdministrator) {
+			$this->setCallStatus ($call['id'], $result['currentStatus'], $this->user);
+		}
+		
+		# Add the message (and send e-mail)
+		$from = "{$this->user}@{$this->settings['emailDomain']}";
+		if (!$messageId = $this->addMessage ($call['id'], $result['message'], $from, $attachments)) {
+			$html = "\n<p class=\"warning\">There was a problem saving the new message - please try again later.</p>";
+			return $html;
+		}
+		
+		# Confirm success by setting a flash message and redirecting
+		$redirectTo = $this->baseUrl . "/calls/{$call['id']}/" . "#message{$messageId}";
+		$html = application::setFlashMessage ('confirm', 'success', $redirectTo);
+		
+		# Return the HTML
+		return $html;
+	}
+	
+	
+	# Function to set the current status for a call
+	private function setCallStatus ($callId, $currentStatus, $administratorId)
+	{
+		# Set the status
+		$update = array ('currentStatus' => $currentStatus, 'administratorId' => $administratorId);
+		$this->databaseConnection->update ($this->settings['database'], 'calls', $update, array ('id' => $callId));
+	}
+	
+	
+	# Function to add a message to a call, which will also send an e-mail
+	private function addMessage ($callId, $message, $from, $attachments, $isUpdate = true)
+	{
+		# Get the details of the previous message, for use in the e-mail reply
+		$previousMessage = false;
+		if ($isUpdate) {
+			$previousMessage = $this->databaseConnection->selectOne ($this->settings['database'], 'messages', array ('callId' => $callId), array (), false, 'id DESC', $limit = 1);
+		}
+		
+		# Assemble the message data
+		$insert = array (
+			'callId'	=> $callId,
+			'message'	=> $message,
+			'email'		=> $from,
+			'createdAt'	=> 'NOW()',
+		);
+		
+		# Insert the reply, or end (which will then ignore the attachment(s))
+		if (!$result = $this->databaseConnection->insert ($this->settings['database'], 'messages', $insert)) {
+			return false;
+		}
+		
+		# Get the message ID
+		$messageId = ($result ? $this->databaseConnection->getLatestId () : false);
+		
+		# Save the attachments
+		if ($attachments) {
+			$directory = $_SERVER['DOCUMENT_ROOT'] . $this->baseUrl . '/images/';
+			foreach ($attachments as $filename => $binaryPayload) {
+				$file = $directory . $callId . '-' . $filename;
+				file_put_contents ($file, $binaryPayload);
+			}
+		}
+		
+		# Send e-mail
+		$html .= $this->emailCorrespondence ($callId, $message, $previousMessage);
+		
+		# Return the message ID
+		return $messageId;
+	}
+	
+	
+	# Function to send mail correspondence about a call
+	private function emailCorrespondence ($callId, $newMessage, $replyingToMessage = array ())
+	{
+		# Get the call data; this is done freshly to ensure a complete object with a known structure
+		$call = $this->getCalls ($callId);
+		
+		# Start the HTML
+		$html = '';
+		
+		# Start extra headers (i.e. from, cc)
+		$headers = array ();
+		
+		# From always has the name of the sending (i.e. current) user, but noted as being via the system e-mail
+		$person = "{$this->userDetails['forename']} {$this->userDetails['surname']} ({$this->user})";
+		$headers['from'] = "From: \"{$person} via Helpdesk\" <{$this->settings['callsEmail']}>";
+		
+		# Recipient(s)
+		// a. Initial submission of call goes: To all admins
+		if (!$replyingToMessage) {
+			$to = $this->getAdminRecipients ();
+		// b. If a reply, goes to the opposite person (admin/caller), Cc: the other admins
+		} else {
+			#!# Needs real name added
+			$to = ($this->userIsAdministrator ? $call['username'] : $call['administratorId']) . "@{$this->settings['emailDomain']}";
+			$headers['cc'] = 'Cc: ' . $this->getAdminRecipients ($exclude = $call['administratorId']);
+		}
+		
+		# Subject has the call ID and current title
+		$subject = ($replyingToMessage ? 'Re: ' : '') . "[Helpdesk][{$call['id']}] " . $call['subject'];
+		
+		# Construct the message
+		if (!$replyingToMessage) {
+			$message  = "\n". 'A support call has been submitted. The details are online at:';
+			$message .= "\n\n" . $_SERVER['_SITE_URL'] . $this->baseUrl . "/calls/{$call['id']}/";
+		} else {
+			#!# Convert $replyingToMessage['createdAt'] from SQLTime to "10/06/2021 16:14" format
+			#!# Convert $replyingToMessage['email'] to person name
+			$message  = "\n" . "On {$replyingToMessage['createdAt']}, {$replyingToMessage['email']} wrote:";
+			$message .= "\n" . application::emailQuoting ($replyingToMessage['message']);
+		}
+		$message .= "\n\n" . $newMessage;
+		$message .= "\n\n\n" . $this->userDetails['forename'];	// Signature
+		
+		# Send the e-mail
+		if (!application::utf8Mail ($to, $subject, wordwrap ($message), implode ("\n", $headers))) {
+			$html .= $this->throwError ('There was a problem sending an e-mail' . ($replyingToMessage ? " to alert the {$this->settings['type']} staff to the call" : '') . ', but the call details have been logged successfully.');
+		}
+		
+		# Report outcome
+		$html .= "\n<br /><p>The following e-mail has been sent:</p>";
+		$html .= "\n<hr />";
+		$html .= "\n<pre>";
+		$html .= htmlspecialchars ($headers['from']);
+		$html .= 'To: ' . $to;
+		if (isSet ($headers['cc'])) {
+			$html .= "\n" . htmlspecialchars ($headers['cc']);
+		}
+		$html .= "\n" . 'Subject: ' . htmlspecialchars ($subject);
+		$html .= "\n" . wordwrap (htmlspecialchars ($message));
+		$html .= '</pre>';
+		
+		# Return the HTML
+		return $html;
 	}
 	
 	
@@ -1003,15 +1230,35 @@ class helpdesk extends frontControllerApplication
 		# Link back to all calls
 		$html .= "\n<p><a href=\"{$this->baseUrl}/calls/" . ($this->userIsAdministrator ? "#call{$callId}" : '') . "\">&laquo; Return to the list of all calls</a></p>";
 		
-		# If editing is required, hand off to the call submission method
-		if ($this->callIsEditable ($call)) {
-			$html .= $this->responseForm ($call['id']);
+		# If not editable, show the call
+		if (!$this->callIsEditable ($call)) {
+			$html .= $this->callHtml ($call);
 			echo $html;
 			return;
 		}
 		
-		# Otherwise show the call
-		$html .= $this->callHtml ($call);
+		# If editing is required, show the call details
+		$html .= "\n\t" . '<h3>Call details</h3>';
+		$html .= "\n\t" . '<p><a id="calllink" href="">&#9662; Show call details</a></p>';
+		$html .= "\n\t" . '<div id="call">';
+		$html .= $this->callMetadataForm ($call['id']);
+		$html .= "\n" . '</div>';
+		
+		# Add toggler
+		$html .= "
+			<script>
+				$(function () {
+					$('a#calllink').click (function (e) {
+						$('#call').slideToggle ();
+						e.preventDefault ();
+					});
+				});
+			</script>
+		";
+		
+		# Show messages
+		$html .= "\n\t<h3>Messages</h3>";
+		$html .= $this->messagesUi ($call);
 		
 		# Show the HTML
 		echo $html;
@@ -1145,19 +1392,26 @@ class helpdesk extends frontControllerApplication
 		$query = "SELECT
 				{$this->settings['table']}.id,
 				subject,
+				{$this->settings['table']}.username,
 				currentStatus,
 				timeSubmitted,
 				timeCompleted,
 				category,
 				{$locationFields}
 				details,
-				reply,
+				administratorId,
+				messages.message AS reply,
 				internalNotes,
 				CONCAT(people.forename,' ',people.surname,' <',people.username,'>') as user,
 				CONCAT(DATE_FORMAT(CAST(timeSubmitted AS DATE), '%e/'), SUBSTRING(DATE_FORMAT(CAST(timeSubmitted AS DATE), '%M'), 1, 3), DATE_FORMAT(CAST(timeSubmitted AS DATE), '/%y')) AS formattedDate
 			FROM {$this->settings['table']}
-			LEFT OUTER JOIN {$this->settings['database']}.categories ON {$this->settings['table']}.categoryId = categories.id
-			LEFT OUTER JOIN {$this->settings['peopleDatabase']}.people ON {$this->settings['table']}.username = people.username
+		-- Join to the latest message, where it is a reply (rather than the original message; see: https://stackoverflow.com/a/3619209/180733
+			LEFT JOIN (SELECT MAX(id) AS maxId, COUNT(id) AS total, callId FROM {$this->settings['database']}.messages GROUP BY callId HAVING total > 1) AS messagesMax ON messagesMax.callId = {$this->settings['table']}.id
+			LEFT JOIN {$this->settings['database']}.messages ON messages.id = messagesMax.maxId
+		-- Categories
+			LEFT JOIN {$this->settings['database']}.categories ON {$this->settings['table']}.categoryId = categories.id
+		-- Person data
+			LEFT JOIN {$this->settings['peopleDatabase']}.people ON {$this->settings['table']}.username = people.username
 			" . ($constraints ? 'WHERE ' . implode (' AND ', $constraints) : '') . '
 		;';
 		
@@ -1247,7 +1501,7 @@ class helpdesk extends frontControllerApplication
 			'details'		=> ($callIsEditable ? "<a class=\"actions\" href=\"{$this->baseUrl}/calls/{$call['id']}/\"><img src=\"/images/icons/pencil.png\" alt=\"\" class=\"icon\" /> <strong>Edit</strong></a>" : ''),
 			'category'		=> 'Category:',
 			'currentStatus'	=> 'Current status:',
-			'reply'			=> "Reply from {$this->settings['type']} staff:",
+			'reply'			=> 'Latest reply:',
 		);
 		
 		# Compile the table

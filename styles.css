@@ -23,3 +23,5 @@
 #helpdesk div.helpdeskcall table .title {max-width: 20em;}
 #helpdesk div.helpdeskcall form tr.upload div.draganddrop {border: 0;}
 #helpdesk div.helpdeskcall form tr.upload p {padding: 0;}
+#helpdesk #call {display: none;}
+#helpdesk p#messageadded {margin-bottom: 2em;}
