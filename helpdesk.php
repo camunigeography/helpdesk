@@ -571,7 +571,9 @@ class helpdesk extends frontControllerApplication
 		));
 		
 		# Return the result
-		if (!$result = $form->process ($html)) {return $html;}
+		if (!$result = $form->process ($html)) {
+			return $html;
+		}
 		
 		# Add in the call ID
 		$result['id'] = $callId;
@@ -681,7 +683,7 @@ class helpdesk extends frontControllerApplication
 		$recipient = "\"{$user['_fullname']}\" <{$user['_preferredEmail']}>";
 		$subject = "Re: [Helpdesk][{$callId}] " . $result['subject'];
 		$headers  = "From: \"{$this->userDetails['forename']} {$this->userDetails['surname']}\" <{$this->userDetails['_preferredEmail']}>\n";
-		$headers .= 'Cc: ' . $this->getRecipients ($exclude = $this->user);		// Copy the other administrators
+		$headers .= 'Cc: ' . $this->getAdminRecipients ($exclude = $this->user);		// Copy the other administrators
 		$date = $editCall['timeSubmitted'];
 		
 		# Construct the message
@@ -720,7 +722,7 @@ class helpdesk extends frontControllerApplication
 		$userRealName = "{$this->userDetails['forename']} {$this->userDetails['surname']}";
 		
 		# Construct the e-mail headers
-		$recipients = $this->getRecipients ();
+		$recipients = $this->getAdminRecipients ();
 		$subject = "[Helpdesk][{$callId}] " . $result['subject'] . ($editCall ? ' (updated)' : '');
 		$headers  = "From: \"{$userRealName} via Helpdesk\" <{$this->settings['administratorEmail']}>\n";
 		$headers .= "Reply-To: \"{$userRealName}\" <{$this->userDetails['_preferredEmail']}>\n";
@@ -742,7 +744,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Function to determine the helpdesk e-mail recipients
-	private function getRecipients ($exclude = false)
+	private function getAdminRecipients ($exclude = false)
 	{
 		# Determine the recipients of the helpdesk call
 		$recipients = array ();
