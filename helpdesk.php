@@ -679,10 +679,13 @@ class helpdesk extends frontControllerApplication
 		# Get the details of the user
 		$user = $this->userDetails ($result['username']);
 		
+		# Assemble the from string from the user details
+		$from = "\"{$this->userDetails['forename']} {$this->userDetails['surname']}\" <{$this->userDetails['_preferredEmail']}>";
+		
 		# Construct the e-mail headers
 		$recipient = "\"{$user['_fullname']}\" <{$user['_preferredEmail']}>";
 		$subject = "Re: [Helpdesk][{$callId}] " . $result['subject'];
-		$headers  = "From: \"{$this->userDetails['forename']} {$this->userDetails['surname']}\" <{$this->userDetails['_preferredEmail']}>\n";
+		$headers  = "From: {$from}\n";
 		$headers .= 'Cc: ' . $this->getAdminRecipients ($exclude = $this->user);		// Copy the other administrators
 		$date = $editCall['timeSubmitted'];
 		
