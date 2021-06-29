@@ -1023,9 +1023,10 @@ class helpdesk extends frontControllerApplication
 		$subject = ($replyingToMessage ? 'Re: ' : '') . "[Helpdesk][{$call['id']}] " . $call['subject'];
 		
 		# Construct the message
+		$message = '';
 		if (!$replyingToMessage) {
 			$message  = "\n". 'A support call has been submitted. The details are online at:';
-			$message .= "\n\n" . $_SERVER['_SITE_URL'] . $this->baseUrl . "/calls/{$call['id']}/";
+			$message .= "\n" . $_SERVER['_SITE_URL'] . $this->baseUrl . "/calls/{$call['id']}/";
 		} else {
 			#!# Convert $replyingToMessage['createdAt'] from SQLTime to "10/06/2021 16:14" format
 			#!# Convert $replyingToMessage['email'] to person name
