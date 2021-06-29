@@ -883,6 +883,17 @@ class helpdesk extends frontControllerApplication
 		# Start the HTML
 		$html = '';
 		
+		# Set the reply field to show the latest message, ready to be replied to, indented
+		$previousMessage = ($call['reply'] ? $call['reply'] : $call['details']);
+		$previousMessage = application::emailQuoting (trim ($previousMessage));
+		$previousMessage .= "\n\n";
+		
+		# Prefix the time of the message (original call details or reply) and person being responded to
+		#!# Convert $replyingToMessage['createdAt'] from SQLTime to "10/06/2021 16:14" format
+		#!# Convert $replyingToMessage['email'] to person name
+		$replyingToMessage = $this->databaseConnection->selectOne ($this->settings['database'], 'messages', array ('callId' => $call['id']), array (), false, 'id DESC', $limit = 1);
+		$previousMessage  = "On {$replyingToMessage['createdAt']}, {$replyingToMessage['email']} wrote:" . "\n\n" . $previousMessage;
+		
 		# Create the form
 		$form = new form (array (
 			'displayRestrictions' => false,
@@ -893,11 +904,13 @@ class helpdesk extends frontControllerApplication
 		));
 		
 		# Add reply field
+		$form->heading ('p', 'When replying, please trim any lines from the quoted text that are no longer relevant.');
 		$form->textarea (array (
 			'name' => 'message',
 			'title' => 'Reply',
 			'cols' => 80,
-			'rows' => 10,
+			'rows' => max (10, substr_count ($previousMessage, "\n") + 3),
+			'default' => $previousMessage,
 			'required' => true,
 		));
 		
@@ -1025,13 +1038,8 @@ class helpdesk extends frontControllerApplication
 		# Construct the message
 		$message = '';
 		if (!$replyingToMessage) {
-			$message  = "\n". 'A support call has been submitted. The details are online at:';
+			$message .= "\n". 'A support call has been submitted. The details are online at:';
 			$message .= "\n" . $_SERVER['_SITE_URL'] . $this->baseUrl . "/calls/{$call['id']}/";
-		} else {
-			#!# Convert $replyingToMessage['createdAt'] from SQLTime to "10/06/2021 16:14" format
-			#!# Convert $replyingToMessage['email'] to person name
-			$message  = "\n" . "On {$replyingToMessage['createdAt']}, {$replyingToMessage['email']} wrote:";
-			$message .= "\n" . application::emailQuoting ($replyingToMessage['message']);
 		}
 		$message .= "\n\n" . $newMessage;
 		$message .= "\n\n\n" . $this->userDetails['forename'];	// Signature
