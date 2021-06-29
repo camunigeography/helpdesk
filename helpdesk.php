@@ -847,7 +847,7 @@ class helpdesk extends frontControllerApplication
 			$html .= "\n<div class=\"graybox\">";
 			$html .= "\n<p class=\"small right\">" . date ('g.ia, jS F Y', strtotime ($message['createdAt'])) . '</p>';
 			$html .= "\n<h4 id=\"message{$id}\"><a href=\"#message{$id}\">#</a> " . ($i == 0 ? 'Initial request' : 'Reply') . ' from&nbsp; ' . $message['email'] . ':</h4>';
-			$html .= application::formatTextBlock (application::makeClickableLinks ($message['message']));
+			$html .= application::formatTextBlock (application::makeClickableLinks (htmlspecialchars ($message['message'])));
 			$html .= "\n</div>";
 			$i++;
 		}
