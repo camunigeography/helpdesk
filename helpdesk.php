@@ -169,6 +169,7 @@ class helpdesk extends frontControllerApplication
 			  `id` int NOT NULL AUTO_INCREMENT COMMENT 'Automatic key',
 			  `callId` int NOT NULL COMMENT 'Call #',
 			  `message` text COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Message',
+			  `messageHtmlOriginal` TEXT NULL COMMENT 'Message, as originally transmitted by e-mail',
 			  `email` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'E-mail',
 			  `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Automatic timestamp',
 			  PRIMARY KEY (`id`)
@@ -646,7 +647,7 @@ class helpdesk extends frontControllerApplication
 		# Assemble and insert the message
 		if (!$isUpdate) {
 			$from = $result['username'] . '@' . $this->settings['emailDomain'];
-			$this->addMessage ($callId, $result['details'], $from, $attachments = array (), $isUpdate = false);
+			$this->addMessage ($callId, $result['details'], NULL, $from, $attachments = array (), $isUpdate = false);
 		}
 		
 		# Return the call ID
@@ -940,7 +941,7 @@ class helpdesk extends frontControllerApplication
 		
 		# Add the message (and send e-mail)
 		$from = "{$this->user}@{$this->settings['emailDomain']}";
-		if (!$messageId = $this->addMessage ($call['id'], $result['message'], $from, $attachments)) {
+		if (!$messageId = $this->addMessage ($call['id'], $result['message'], NULL, $from, $attachments)) {
 			$html = "\n<p class=\"warning\">There was a problem saving the new message - please try again later.</p>";
 			return $html;
 		}
@@ -964,7 +965,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Function to add a message to a call, which will also send an e-mail
-	private function addMessage ($callId, $message, $from, $attachments, $isUpdate = true)
+	private function addMessage ($callId, $message, $messageHtmlOriginal = NULL, $from, $attachments, $isUpdate = true)
 	{
 		# Get the details of the previous message, for use in the e-mail reply
 		$previousMessage = false;
@@ -974,10 +975,11 @@ class helpdesk extends frontControllerApplication
 		
 		# Assemble the message data
 		$insert = array (
-			'callId'	=> $callId,
-			'message'	=> $message,
-			'email'		=> $from,
-			'createdAt'	=> 'NOW()',
+			'callId'				=> $callId,
+			'message'				=> $message,
+			'messageHtmlOriginal'	=> $messageHtmlOriginal,	// In case the original message ever needs to be reconverted
+			'email'					=> $from,
+			'createdAt'				=> 'NOW()',
 		);
 		
 		# Insert the reply, or end (which will then ignore the attachment(s))
@@ -1508,7 +1510,7 @@ class helpdesk extends frontControllerApplication
 		if (isSet ($call['room'])) {$table['room'] = $call['room'];}
 		$table['category'] = $call['category'];
 		$table['currentStatus'] =  $call['currentStatus'];
-		$table['reply'] = application::makeClickableLinks ($call['reply']);
+		$table['reply'] = application::makeClickableLinks (application::str_truncate ($call['reply'], 500, false, false, false, false));
 		
 		# Set the heading labels
 		$headings = array (
@@ -1705,9 +1707,26 @@ class helpdesk extends frontControllerApplication
 		$this->userDetails = $this->userDetails ();
 		$this->userVisibleIdentifier = $this->user;
 		$this->userIsAdministrator = $this->userIsAdministrator ();
+
+		# If the message is HTML, strip tags, but save the original, in case the original message ever needs to be reconverted
+		$messageHtmlOriginal = NULL;
+		if (preg_match ('@(<br>|<br />|</div>|</p>)@', $message)) {
+			$messageHtmlOriginal = $message;
+			$message = $this->unHtml ($message);
+		}
 		
 		# Add the message (and send e-mail)
-		$this->addMessage ($callId, $message, $from, $attachments);
+		$this->addMessage ($callId, $message, $messageHtmlOriginal, $from, $attachments);
+	}
+	
+	
+	# Function to convert an HTML message to text
+	private function unHtml ($html)
+	{
+		# Convert using html2text; see: https://github.com/soundasleep/html2text
+		require_once ('html2text.php');
+		$string = convert_html_to_text ($html);
+		return $string;
 	}
 	
 	
