@@ -1369,7 +1369,7 @@ class helpdesk extends frontControllerApplication
 		-- Person data
 			LEFT JOIN {$this->settings['peopleDatabase']}.people ON {$this->settings['table']}.username = people.username
 			" . ($constraints ? 'WHERE ' . implode (' AND ', $constraints) : '') . '
-		;';
+		';
 		
 		# End the SQL query by specifying the order
 		$listMostRecentFirst = ($listMostRecentFirst || $this->settings['listMostRecentFirst'] && !$this->userIsAdministrator);
