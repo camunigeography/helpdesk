@@ -940,8 +940,8 @@ class helpdesk extends frontControllerApplication
 		$headers['from'] = "From: \"{$person} via Helpdesk\" <{$this->settings['callsEmail']}>";
 		
 		# Recipient(s)
-		// a. Initial submission of call goes: To all admins
-		if (!$replyingToMessage) {
+		// a. Initial submission of call (or reply to user's own message before admins have picked up) goes: To all admins
+		if (!$replyingToMessage || !$call['administratorId']) {
 			$to = $this->getAdminRecipients ();
 		// b. If a reply, goes to the opposite person (admin/caller), Cc: the other admins
 		} else {
