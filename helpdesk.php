@@ -954,11 +954,12 @@ class helpdesk extends frontControllerApplication
 		# Construct the message
 		$message = '';
 		if (!$replyingToMessage) {
-			$message .= "\n". 'A support call has been submitted. The details are online at:';
-			$message .= "\n" . $_SERVER['_SITE_URL'] . $this->baseUrl . "/calls/{$call['id']}/";
+			$message .= "\n". 'A support call has been submitted, as follows:';
 		}
 		$message .= "\n\n" . $newMessage;
 		$message .= "\n\n\n" . $userDetails['forename'];	// Signature
+		$message .= "\n\n\n" . 'You can reply by e-mail, or on the web at:';
+		$message .= "\n" . $_SERVER['_SITE_URL'] . $this->baseUrl . "/calls/{$call['id']}/";
 		
 		# Send the e-mail
 		if (!application::utf8Mail ($to, $subject, wordwrap ($message), implode ("\n", $headers))) {
