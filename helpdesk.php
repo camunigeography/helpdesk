@@ -515,6 +515,8 @@ class helpdesk extends frontControllerApplication
 		# Create the call reporting form
 		$this->loadJquery ();
 		$form = new form (array (
+			'name' => 'callmetadata',
+			'reappear' => true,
 			'formCompleteText' => false,
 			'databaseConnection' => $this->databaseConnection,
 			'submitButtonText' => 'Update main call details',
