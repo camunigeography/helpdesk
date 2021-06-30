@@ -923,8 +923,16 @@ class helpdesk extends frontControllerApplication
 		# Start extra headers (i.e. from, cc)
 		$headers = array ();
 		
+		# Get the user details
+		$userDetails = $this->userDetails;
+		
+		# For an initial submission, ensure the user details comes from the call user, not the current user, as calls can be submitted on behalf of a user by an admin
+		if (!$replyingToMessage) {
+			$userDetails = $this->userDetails ($call['username']);
+		}
+		
 		# From always has the name of the sending (i.e. current) user, but noted as being via the system e-mail
-		$person = "{$this->userDetails['forename']} {$this->userDetails['surname']} ({$this->user})";
+		$person = "{$userDetails['forename']} {$userDetails['surname']} ({$userDetails['username']})";
 		$headers['from'] = "From: \"{$person} via Helpdesk\" <{$this->settings['callsEmail']}>";
 		
 		# Recipient(s)
@@ -948,7 +956,7 @@ class helpdesk extends frontControllerApplication
 			$message .= "\n" . $_SERVER['_SITE_URL'] . $this->baseUrl . "/calls/{$call['id']}/";
 		}
 		$message .= "\n\n" . $newMessage;
-		$message .= "\n\n\n" . $this->userDetails['forename'];	// Signature
+		$message .= "\n\n\n" . $userDetails['forename'];	// Signature
 		
 		# Send the e-mail
 		if (!application::utf8Mail ($to, $subject, wordwrap ($message), implode ("\n", $headers))) {
