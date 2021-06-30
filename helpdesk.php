@@ -240,18 +240,18 @@ class helpdesk extends frontControllerApplication
 		if (!$user) {$user = $this->user;}
 		
 		# Get the list of users
-		if (!$userDetails = $this->databaseConnection->select ($this->settings['peopleDatabase'], 'people', array ('username' => $user /*, 'active' => 'Y' */ ))) {
+		if (!$userDetails = $this->databaseConnection->selectOne ($this->settings['peopleDatabase'], 'people', array ('username' => $user /*, 'active' => 'Y' */ ))) {
 			return false;
 		}
 		
 		# Determine the user's preferred e-mail address
-		$userDetails[$user]['_preferredEmail'] = (application::validEmail ($userDetails[$user]['websiteEmail']) ? $userDetails[$user]['websiteEmail'] : (application::validEmail ($userDetails[$user]['email']) ? $userDetails[$user]['email'] : "{$user}@{$this->settings['emailDomain']}"));
+		$userDetails['_preferredEmail'] = (application::validEmail ($userDetails['websiteEmail']) ? $userDetails['websiteEmail'] : (application::validEmail ($userDetails['email']) ? $userDetails['email'] : "{$user}@{$this->settings['emailDomain']}"));
 		
 		# Assemble the user's full name
-		$userDetails[$user]['_fullname'] = "{$userDetails[$user]['forename']} {$userDetails[$user]['surname']}";
+		$userDetails['_fullname'] = "{$userDetails['forename']} {$userDetails['surname']}";
 		
 		# Otherwise return the details
-		return $userDetails[$user];
+		return $userDetails;
 	}
 	
 	
