@@ -752,7 +752,7 @@ class helpdesk extends frontControllerApplication
 		# Show each existing message
 		$i = 0;
 		foreach ($messages as $id => $message) {
-			$html .= "\n<div class=\"graybox\">";
+			$html .= "\n<div class=\"messagebox graybox shadow\">";
 			$html .= "\n<p class=\"small right\">" . date ('g.ia, jS F Y', strtotime ($message['createdAt'])) . '</p>';
 			$html .= "\n<h4 id=\"message{$id}\"><a href=\"#message{$id}\">#</a> " . ($i == 0 ? 'Initial request' : 'Reply') . ' from&nbsp; ' . $message['email'] . ':</h4>';
 			$html .= application::formatTextBlock (application::makeClickableLinks (htmlspecialchars ($message['message'])));
@@ -767,7 +767,7 @@ class helpdesk extends frontControllerApplication
 		}
 		
 		# Show message form
-		$html .= "\n<div class=\"graybox\">";
+		$html .= "\n<div class=\"graybox shadow\">";
 		$html .= "\n<h4>Add reply:</h4>";
 		$html .= $this->messageForm ($call);
 		$html .= "\n</div>";
@@ -891,6 +891,7 @@ class helpdesk extends frontControllerApplication
 		
 		# Insert the reply, or end (which will then ignore the attachment(s))
 		if (!$result = $this->databaseConnection->insert ($this->settings['database'], 'messages', $insert)) {
+			#!# Throw error
 			return false;
 		}
 		
