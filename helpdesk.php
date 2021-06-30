@@ -279,13 +279,14 @@ class helpdesk extends frontControllerApplication
 		# Show my current calls
 		$html .= "\n<h2>My current/recent problems</h2>";
 		$html .= $this->showCallRate (false);
-		if (!$calls = $this->getCalls ()) {
+		if (!$calls = $this->getCalls (false, $limitToCurrentUser = true)) {
 			$html .= "\n<p>{$this->tick} You do not appear to have any logged {$this->settings['type']} problems outstanding" . ($this->userIsAdministrator ? '  that you submitted for yourself' : '') . '.</p>';
 		} else {
 			$html .= $this->renderCallsList ($calls);
 		}
 		
 		# Show the reporting screen
+		#!# After adding a new call, the block above needs to be regenerated
 		$html .= "\n<h2>Report a new problem</h2>";
 		$html .= $this->reportForm ();
 		
@@ -1009,7 +1010,7 @@ class helpdesk extends frontControllerApplication
 	public function allcalls ()
 	{
 		# Get the list of calls
-		$calls = $this->getCalls (false, $limitDate = false, false, $listMostRecentFirst = true);
+		$calls = $this->getCalls (false, $limitToCurrentUser = (!$this->userIsAdministrator), $limitDate = false, false, $listMostRecentFirst = true);
 		
 		# Render the calls list
 		$html = $this->renderCallsList ($calls, $limitDate = false, false);
@@ -1047,7 +1048,7 @@ class helpdesk extends frontControllerApplication
 		$limitDate = ($result['what'] == 'unresolved');
 		
 		# Get the calls
-		if (!$calls = $this->getCalls (false, $limitDate, $searchTerm)) {
+		if (!$calls = $this->getCalls (false, false, $limitDate, $searchTerm)) {
 			$html = "\n<p>No matching calls were found.</p>";
 			echo $html;
 			return false;
@@ -1291,7 +1292,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Model function to get calls data (or a single call, if a callId is specified)
-	private function getCalls ($callId = false, $limitDate = true, $searchTerm = false, $listMostRecentFirst = false)
+	private function getCalls ($callId = false, $limitToCurrentUser = false, $limitDate = true, $searchTerm = false, $listMostRecentFirst = false)
 	{
 		# Start constraints
 		$constraints = array ();
@@ -1303,8 +1304,8 @@ class helpdesk extends frontControllerApplication
 			$preparedStatementValues['id'] = $callId;
 		}
 		
-		# Limit to user if required
-		if (!$this->userIsAdministrator || $this->action == 'home') {
+		# Limit to current user if required
+		if ($limitToCurrentUser) {
 			$constraints[] = 'calls.username = :user';
 			$preparedStatementValues['user'] = $this->user;
 		}
