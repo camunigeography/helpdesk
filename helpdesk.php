@@ -677,102 +677,6 @@ class helpdesk extends frontControllerApplication
 	}
 	
 	
-	# Function to e-mail call changes to a user
-	private function mailCallReply ($callId, $recipientUsername, $subject, $reply, $originalMessage, $originalMessageTime)
-	{
-		# Start the HTML
-		$html = '';
-		
-		# Get the details of the recipient user
-		$user = $this->userDetails ($recipientUsername);
-		
-		# Assemble the from string from the user details
-		$from = "\"{$this->userDetails['forename']} {$this->userDetails['surname']}\" <{$this->userDetails['_preferredEmail']}>";
-		
-		# Construct the e-mail headers
-		$recipient = "\"{$user['_fullname']}\" <{$user['_preferredEmail']}>";
-		$subject = "Re: [Helpdesk][{$callId}] " . $subject;
-		$headers  = "From: {$from}\n";
-		$headers .= 'Cc: ' . $this->getAdminRecipients ($exclude = $this->user);		// Copy the other administrators
-		
-		# Construct the message
-		$message  = "\n" . "At {$originalMessageTime}, {$user['_fullname']} wrote:";
-		$message .= "\n" . application::emailQuoting ($originalMessage);
-		$message .= "\n\n" . stripslashes ($reply);
-		$message .= "\n\n\n" . $this->userDetails['forename'];
-		
-		# Send the e-mail
-		if (!application::utf8Mail ($recipient, $subject, wordwrap ($message), $headers)) {
-			$html .= $this->throwError ("There was a problem sending an e-mail to alert the {$this->settings['type']} staff to a new call, but the call itself has been logged successfully.");
-		}
-		
-		# Report outcome
-		$html .= "\n<br /><p>The following e-mail has been sent:</p>";
-		$html .= "\n<hr />";
-		$html .= "\n<pre>";
-		$html .= 'To: ' . $user['_preferredEmail'];
-		$html .= "\n" . htmlspecialchars ($headers);
-		$html .= "\n" . 'Subject: ' . htmlspecialchars ($subject);
-		$html .= "\n" . htmlspecialchars ($message);
-		$html .= '</pre>';
-		
-		# Return the HTML
-		return $html;
-	}
-	
-	
-	# Function to e-mail the admin details of a call
-	private function mailCallAdmin ($callId, $result, $editCall = false)
-	{
-		# Start the HTML
-		$html = '';
-		
-		# Construct the user's real name
-		$userRealName = "{$this->userDetails['forename']} {$this->userDetails['surname']}";
-		
-		# Construct the e-mail headers
-		$recipients = $this->getAdminRecipients ();
-		$subject = "[Helpdesk][{$callId}] " . $result['subject'] . ($editCall ? ' (updated)' : '');
-		$headers  = "From: \"{$userRealName} via Helpdesk\" <{$this->settings['administratorEmail']}>\n";
-		$headers .= "Reply-To: \"{$userRealName}\" <{$this->userDetails['_preferredEmail']}>\n";
-		
-		# Construct the message
-		$message  = "\n". 'A support call has been ' . ($editCall ? 'updated' : 'submitted') . '. The details are online at:';
-		$message .= "\n\n" . $_SERVER['_SITE_URL'] . $this->baseUrl . "/calls/{$callId}/";
-		$message .= "\n\n" . stripslashes ($result['details']);
-		$message .= "\n\n\n" . '** Please respond to the user using the web interface rather than replying to this e-mail directly. **';
-		
-		# Send the e-mail
-		if (!application::utf8Mail ($recipients, $subject, wordwrap ($message), $headers)) {
-			$html .= $this->throwError ("There was a problem sending an e-mail to alert the {$this->settings['type']} staff to the call, but the call details have been logged successfully.");
-		}
-		
-		# Return the HTML
-		return $html;
-	}
-	
-	
-	# Function to determine the helpdesk e-mail recipients
-	private function getAdminRecipients ($exclude = false)
-	{
-		# Determine the recipients of the helpdesk call
-		$recipients = array ();
-		foreach ($this->administrators as $user => $attributes) {
-			if ($user == $exclude) {continue;}
-			if ($attributes['receiveHelpdeskEmail'] == 'Yes') {
-				$recipients[] = $attributes['email'];
-			}
-		}
-		if (!$recipients) {$recipients[] = $this->settings['administratorEmail'];}
-		
-		# Convert to comma-separated string
-		$recipients = implode (', ', $recipients);
-		
-		# Return the recipients
-		return $recipients;
-	}
-	
-	
 	# Function to show the number of calls
 	private function showCallRate ($showHeading = true)
 	{
@@ -1066,6 +970,27 @@ class helpdesk extends frontControllerApplication
 		
 		# Return the HTML
 		return $html;
+	}
+	
+	
+	# Function to determine the helpdesk e-mail recipients
+	private function getAdminRecipients ($exclude = false)
+	{
+		# Determine the recipients of the helpdesk call
+		$recipients = array ();
+		foreach ($this->administrators as $user => $attributes) {
+			if ($user == $exclude) {continue;}
+			if ($attributes['receiveHelpdeskEmail'] == 'Yes') {
+				$recipients[] = $attributes['email'];
+			}
+		}
+		if (!$recipients) {$recipients[] = $this->settings['administratorEmail'];}
+		
+		# Convert to comma-separated string
+		$recipients = implode (', ', $recipients);
+		
+		# Return the recipients
+		return $recipients;
 	}
 	
 	
