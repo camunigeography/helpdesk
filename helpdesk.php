@@ -1186,11 +1186,11 @@ class helpdesk extends frontControllerApplication
 		# Link back to all calls
 		$html .= "\n<p><a href=\"{$this->baseUrl}/calls/" . ($this->userIsAdministrator ? "#call{$callId}" : '') . "\">&laquo; Return to the list of all calls</a></p>";
 		
-		# If not editable, show the call
-		if (!$this->callIsEditable ($call)) {
-			$html .= $this->callHtml ($call);
-			echo $html;
-			return;
+		# Note if the call is marked as resolved
+		if ($call['currentStatus'] == 'completed') {
+			$html .= "\n<div class=\"graybox\">";
+			$html .= "\n<p class=\"success\">{$this->tick} Note: this call below has been marked as resolved.</p>";
+			$html .= "\n</div>";
 		}
 		
 		# If editing is required, show the call details
@@ -1418,7 +1418,7 @@ class helpdesk extends frontControllerApplication
 		# Start the HTML
 		$html  = '';
 		
-		# Not if the call is marked as resolved
+		# Note if the call is marked as resolved
 		if ($call['currentStatus'] == 'completed') {
 			$html .= '<p class="warning">Note: this call below has been marked as resolved.</p>';
 		}
