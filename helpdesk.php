@@ -1088,7 +1088,7 @@ class helpdesk extends frontControllerApplication
 			'requiredFieldIndicator' => false,
 			'reappear' => true,
 		));
-		$form->input (array (
+		$form->search (array (
 			'name'		=> 'q',
 			'size'		=> ($float ? 20 : 40),
 			'maxlength'	=> 255,
