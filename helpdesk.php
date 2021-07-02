@@ -1150,7 +1150,7 @@ class helpdesk extends frontControllerApplication
 	public function calls ()
 	{
 		# Get the calls
-		$calls = $this->getCalls ();
+		$calls = $this->getCalls (false, !$this->userIsAdministrator);
 		
 		# Render the calls list
 		$html = $this->renderCallsList ($calls);
