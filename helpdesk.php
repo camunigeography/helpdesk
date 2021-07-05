@@ -1623,6 +1623,11 @@ class helpdesk extends frontControllerApplication
 		}
 		$callId = $matches[1];
 		
+		# Discard the mail, taking no action, if the subject shows it is a bounce
+		if (preg_match ('/^Automatic reply:/', $subject)) {
+			return false;
+		}
+		
 		# Validate the call by getting it from the database
 		if (!$call = $this->getCalls ($callId)) {
 			#!# Issue bounce
