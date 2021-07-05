@@ -755,7 +755,11 @@ class helpdesk extends frontControllerApplication
 			$html .= "\n<div class=\"messagebox graybox shadow\">";
 			$html .= "\n<p class=\"small right\">" . date ('g.ia, jS F Y', strtotime ($message['createdAt'])) . '</p>';
 			$html .= "\n<h4 id=\"message{$id}\"><a href=\"#message{$id}\">#</a> " . ($i == 0 ? 'Initial request' : 'Reply') . ' from&nbsp; ' . $message['email'] . ':</h4>';
-			$html .= application::formatTextBlock (application::makeClickableLinks (htmlspecialchars ($message['message'])));
+			
+			# Add the message
+			$html .= $this->formattedMessageBox ($message['message']);
+			
+			# End box
 			$html .= "\n</div>";
 			$i++;
 		}
@@ -1004,6 +1008,23 @@ class helpdesk extends frontControllerApplication
 		
 		# Return the recipients
 		return $recipients;
+	}
+	
+	
+	# Function to create a formatted message box from a plain-text message string
+	private function formattedMessageBox ($message)
+	{
+		# Convert entities
+		$html = htmlspecialchars ($message);
+		
+		# Make links clickable
+		$html = application::makeClickableLinks ($html);
+		
+		# Format newlines
+		$html = application::formatTextBlock ($html);
+		
+		# Return the HTML
+		return $html;
 	}
 	
 	
