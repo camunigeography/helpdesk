@@ -812,7 +812,7 @@ class helpdesk extends frontControllerApplication
 		));
 		
 		# Add reply field
-		$form->heading ('p', 'When replying, please trim any lines from the quoted text that are no longer relevant.');
+		$form->heading ('p', '<img src="/images/icons/comment.png" class="icon" /> When replying, please trim any lines from the quoted text that are no longer relevant, to help keep e-mails shorter.');
 		$form->textarea (array (
 			'name' => 'message',
 			'title' => 'Reply',
