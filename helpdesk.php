@@ -1222,16 +1222,7 @@ class helpdesk extends frontControllerApplication
 		$html .= "\n" . '</div>';
 		
 		# Add toggler
-		$html .= "
-			<script>
-				$(function () {
-					$('a#calllink').click (function (e) {
-						$('#call').slideToggle ();
-						e.preventDefault ();
-					});
-				});
-			</script>
-		";
+		$html .= $this->togglerJs ('a#calllink', '#call');
 		
 		# Show messages
 		$html .= "\n\t<h3>Messages</h3>";
@@ -1239,6 +1230,26 @@ class helpdesk extends frontControllerApplication
 		
 		# Show the HTML
 		echo $html;
+	}
+	
+	
+	# Function to provide a JS toggler
+	private function togglerJs ($linkSelector, $panelSelector)
+	{
+		# Create the HTML
+		$html = "
+			<script>
+				$(function () {
+					$('{$linkSelector}').click (function (e) {
+						$('{$panelSelector}').slideToggle ();
+						e.preventDefault ();
+					});
+				});
+			</script>
+		";
+		
+		# Return the HTML
+		return $html;
 	}
 	
 	
