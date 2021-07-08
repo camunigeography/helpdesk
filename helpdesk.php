@@ -752,12 +752,12 @@ class helpdesk extends frontControllerApplication
 		# Show each existing message
 		$i = 0;
 		foreach ($messages as $id => $message) {
-			$html .= "\n<div class=\"messagebox graybox shadow\">";
+			$html .= "\n\n<div class=\"messagebox graybox shadow\">";
 			$html .= "\n<p class=\"small right\">" . date ('g.ia, jS F Y', strtotime ($message['createdAt'])) . '</p>';
 			$html .= "\n<h4 id=\"message{$id}\"><a href=\"#message{$id}\">#</a> " . ($i == 0 ? 'Initial request' : 'Reply') . ' from&nbsp; ' . $message['email'] . ':</h4>';
 			
 			# Add the message
-			$html .= $this->formattedMessageBox ($message['message']);
+			$html .= "\n" . $this->formattedMessageBox ($message['message'], $id);
 			
 			# End box
 			$html .= "\n</div>";
@@ -798,13 +798,13 @@ class helpdesk extends frontControllerApplication
 		# Set the reply field to show the latest message, ready to be replied to, indented
 		$previousMessage = ($call['reply'] ? $call['reply'] : $call['details']);
 		$previousMessage = application::emailQuoting (trim ($previousMessage));
-		$previousMessage .= "\n\n";
 		
 		# Prefix the time of the message (original call details or reply) and person being responded to
 		#!# Convert $replyingToMessage['createdAt'] from SQLTime to "10/06/2021 16:14" format
 		#!# Convert $replyingToMessage['email'] to person name
 		$replyingToMessage = $this->databaseConnection->selectOne ($this->settings['database'], 'messages', array ('callId' => $call['id']), array (), false, 'id DESC', $limit = 1);
 		$previousMessage  = "On {$replyingToMessage['createdAt']}, {$replyingToMessage['email']} wrote:" . "\n\n" . $previousMessage;
+		$previousMessage = "\n\n\n\n\n---\n\n" . $previousMessage;		// NB If changing this, formattedMessageBox () must also be modified
 		
 		# Create the form
 		$form = new form (array (
@@ -1012,8 +1012,16 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Function to create a formatted message box from a plain-text message string
-	private function formattedMessageBox ($message)
+	private function formattedMessageBox ($message, $id)
 	{
+		# Detect a reply within the message, and insert a separator if so
+		$containsReply = false;
+		$expansionSeparator = "\n\n" . str_repeat ('~!@', 5) . "\n";	// String likely to be unique
+		if (preg_match ("/^(.+)(\n---\n\nOn [0-9]{4}-[0-9]{2}-[0-9]{2} .+ wrote:\n\n> .+)$/sU", $message, $matches)) {
+			$message = $matches[1] . $expansionSeparator . $matches[2];		// Insert separator
+			$containsReply = true;
+		}
+		
 		# Convert entities
 		$html = htmlspecialchars ($message);
 		
@@ -1022,6 +1030,21 @@ class helpdesk extends frontControllerApplication
 		
 		# Format newlines
 		$html = application::formatTextBlock ($html);
+		
+		# If the message contains a reply, make expandable
+		if ($containsReply) {
+			list ($new, $original) = explode ('<p>' . trim ($expansionSeparator) . '</p>', $html);
+			
+			# Create the HTML freshly, starting with the new message part
+			$html  = $new;
+			
+			# Add toggled section
+			$html .= $this->togglerJs ("a#messagelink{$id}", "#message{$id}quotedpart");
+			$html .= "\n\t" . '<p><a id="' . "messagelink{$id}" . '" href="#" title="See quoted part">&hellip;</a></p>';
+			$html .= "\n\t" . '<div id="' . "message{$id}quotedpart" . '" class="quotedpart">';
+			$html .= $original;
+			$html .= "\n" . '</div>';
+		}
 		
 		# Return the HTML
 		return $html;
