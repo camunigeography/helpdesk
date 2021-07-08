@@ -1713,6 +1713,13 @@ class helpdesk extends frontControllerApplication
 			$message = $this->unHtml ($message);
 		}
 		
+		# Update the status if an admin is replying but no admin currently set
+		if ($this->userIsAdministrator) {
+			if (!$call['administratorId']) {
+				$this->setCallStatus ($call['id'], 'researching', $this->user);
+			}
+		}
+		
 		# Add the message (and send e-mail)
 		$this->addMessage ($callId, $message, $messageHtmlOriginal, $from, $attachments);
 	}
