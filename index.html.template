@@ -8,11 +8,12 @@
 
 # Define the settings
 $settings = array (
-	'username'		=> 'the_password',
-	'h1'			=> '<h1>IT helpdesk</h1>',
-	'institution'	=> 'Widgets',
-	'type'			=> 'computing',
-	'callsEmail'	=> 'helpdesk@example.com',		// Must match what is in /etc/aliases
+	'username'			=> 'the_password',
+	'h1'				=> '<h1>IT helpdesk</h1>',
+	'institution'		=> 'Widgets',
+	'type'				=> 'computing',
+	'callsEmail'		=> 'helpdesk@example.com',		// Must match what is in /etc/aliases
+	'incomingMailLog'	=> '/path/to/file.txt',		// Must be writeable by incoming mail processor user, e.g. 'Debian-exim'
 );
 
 

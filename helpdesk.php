@@ -27,6 +27,7 @@ class helpdesk extends frontControllerApplication
 			'apiUsername'			=> false,		// Optional API access
 			'tabUlClass' => 'tabsflat',
 			'callsEmail' => NULL,		// Address for incoming/outgoing e-mail for calls
+			'incomingMailLog' => false,		// Set path or false; file must be writeable by incoming mail processor user, e.g. 'Debian-exim'
 			'pearLocation' => false,		// If not already in the include_path, e.g. '/usr/share/php/' for Debian/Ubuntu
 		);
 		
@@ -1671,6 +1672,18 @@ class helpdesk extends frontControllerApplication
 		$importMail = new importMail ($this->settings['pearLocation']);
 		list ($from, $subject, $time, $message, $attachments) = $importMail->main ($simplifyFrom = true);
 		
+		# Log incoming mail if required (1) - pure parsed mail
+		if ($this->settings['incomingMailLog']) {
+			$emailData = array (
+				'from' => $from,
+				'subject' => $subject,
+				'time' => $time,
+				'message' => $message,
+				'attachments' => array_keys ($attachments),
+			);
+			file_put_contents ($this->settings['incomingMailLog'], print_r ($emailData, true), FILE_APPEND);
+		}
+
 		# Extract the call ID from the subject line
 		if (!preg_match ('/\[Helpdesk\]\[([0-9]+)\].*/', $subject, $matches)) {
 			return false;
@@ -1705,7 +1718,27 @@ class helpdesk extends frontControllerApplication
 		$this->userDetails = $this->userDetails ();
 		$this->userVisibleIdentifier = $this->user;
 		$this->userIsAdministrator = $this->userIsAdministrator ();
-
+		
+		# Log incoming mail if required (2) - fuller data
+		if ($this->settings['incomingMailLog']) {
+			$emailData = array (
+				'from' => $from,
+				'fromUsername' => $fromUsername,
+				'subject' => $subject,
+				'time' => $time,
+				'message' => $message,
+				'attachments' => array_keys ($attachments),
+				'callId' => $callId,
+				'call' => $call,
+				'callUser' => $call['username'],
+				'thisUser' => $this->user,
+				'thisUserDetails' => json_encode ($this->userDetails, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+				'userVisibleIdentifier' => $this->userVisibleIdentifier,
+				'userIsAdministrator' => $this->userIsAdministrator,
+			);
+			file_put_contents ($this->settings['incomingMailLog'], print_r ($emailData, true), FILE_APPEND);
+		}
+		
 		# If the message is HTML, strip tags, but save the original, in case the original message ever needs to be reconverted
 		$messageHtmlOriginal = NULL;
 		if (preg_match ('@(<br>|<br />|</div>|</p>)@', $message)) {
