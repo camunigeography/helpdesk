@@ -1015,11 +1015,17 @@ class helpdesk extends frontControllerApplication
 	# Function to create a formatted message box from a plain-text message string
 	private function formattedMessageBox ($message, $id)
 	{
+		# Normalise newlines
+		$message = str_replace ("\r\n", "\n", $message);
+		
 		# Detect a reply within the message, and insert a separator if so
 		$containsReply = false;
 		$expansionSeparator = "\n\n" . str_repeat ('~!@', 5) . "\n";	// String likely to be unique
-		if (preg_match ("/^(.+)(\n---\n\nOn [0-9]{4}-[0-9]{2}-[0-9]{2} .+ wrote:\n\n> .+)$/sU", $message, $matches)) {
-			$message = $matches[1] . $expansionSeparator . $matches[2];		// Insert separator
+		if (preg_match ("/^(.+)(\n---\n\nOn .+ wrote:\n\n> .+)$/sU", $message, $matches)) {
+			$message = $matches[1] . "\n\n" . $expansionSeparator . $matches[2];		// Insert separator
+			while (substr_count ($message, "\n\n\n" . $expansionSeparator)) {
+				$message = str_replace ("\n\n\n" . $expansionSeparator, "\n\n" . $expansionSeparator, $message);
+			}
 			$containsReply = true;
 		}
 		
