@@ -1592,7 +1592,7 @@ class helpdesk extends frontControllerApplication
 		$html  = '';
 		
 		# Calls logged
-		$html .= "\n<p>Total calls logged: <strong>" . $this->totalCalls (false) . "</strong></p>";
+		$html .= "\n<p>Total calls logged: <strong>" . number_format ($this->totalCalls (false)) . "</strong></p>";
 		
 		# Calls outstanding
 		$html .= "\n<p>Total calls outstanding (not completed): <strong>" . $this->totalCalls () . "</strong></p>";
@@ -1614,7 +1614,10 @@ class helpdesk extends frontControllerApplication
 			ORDER BY Total DESC,category
 		;";
 		if ($data = $this->databaseConnection->getData ($query)) {
-			$html .= "\n<h3>Problem areas:</h3>";
+			foreach ($data as $index => $category) {
+				$data[$index]['Total'] = number_format ($category['Total']);
+			}
+			$html .= "\n<h3>By category:</h3>";
 			$html .= "\n" . application::htmlTable ($data, array (), 'lines compressed', false);
 		}
 		
