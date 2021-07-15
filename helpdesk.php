@@ -126,6 +126,9 @@ class helpdesk extends frontControllerApplication
 	# Whether jQuery is loaded
 	private $jQueryLoaded = false;
 	
+	# Search term result
+	private $searchTerm = false;
+	
 	
 	# Database structure definition
 	public function databaseStructure ()
@@ -1079,35 +1082,32 @@ class helpdesk extends frontControllerApplication
 		$html = '';
 		
 		# Process the form or end
-		if (!$result = $this->searchForm ()) {return false;}
-		
-		# Get the search term
-		$searchTerm = $result['q'];
+		if (!$this->searchTerm) {return false;}
 		
 		#!# Currently not working
 		# End if no submission
-		if (!strlen ($searchTerm)) {
+		if (!strlen ($this->searchTerm)) {
 			$html = $this->recentSearches ();
 			echo $html;
 			return false;
 		}
 		
 		# Log the search term
-		$log = array ('search' => $searchTerm, 'username' => $this->user);
+		$log = array ('search' => $this->searchTerm, 'username' => $this->user);
 		$this->databaseConnection->insert ($this->settings['database'], 'searches', $log);
 		
 		# Determine if the call dates should be limited, i.e. if only showing unresolved items
 		$limitDate = ($result['what'] == 'unresolved');
 		
 		# Get the calls
-		if (!$calls = $this->getCalls (false, false, $limitDate, $searchTerm)) {
+		if (!$calls = $this->getCalls (false, false, $limitDate, $this->searchTerm)) {
 			$html = "\n<p>No matching calls were found.</p>";
 			echo $html;
 			return false;
 		}
 		
 		# Render the calls list
-		$html = $this->renderCallsList ($calls, $limitDate, $searchTerm);
+		$html = $this->renderCallsList ($calls, $limitDate, $this->searchTerm);
 		
 		# Show the HTML
 		echo $html;
@@ -1146,7 +1146,7 @@ class helpdesk extends frontControllerApplication
 			'title'		=> 'Search',
 			'required'	=> true,
 			'placeholder' => 'Search calls',
-			'autofocus'	=> ($this->action != 'report'),
+			'autofocus'	=> ($this->action == 'search'),
 		));
 		$form->select (array (
 			'name'		=> 'what',
@@ -1162,8 +1162,8 @@ class helpdesk extends frontControllerApplication
 		$_GET = $get;
 		unset ($get);
 		
-		# Return the result
-		return $result;
+		# Set the result
+		$this->searchTerm = $result['q'];
 	}
 	
 	
