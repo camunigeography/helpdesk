@@ -1100,7 +1100,7 @@ class helpdesk extends frontControllerApplication
 		$limitDate = ($result['what'] == 'unresolved');
 		
 		# Get the calls
-		if (!$calls = $this->getCalls (false, false, $limitDate, $this->searchTerm)) {
+		if (!$calls = $this->getCalls (false, false, $limitDate, $this->searchTerm, true)) {
 			$html = "\n<p>No matching calls were found.</p>";
 			echo $html;
 			return false;
