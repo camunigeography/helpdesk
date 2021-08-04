@@ -1613,7 +1613,7 @@ class helpdesk extends frontControllerApplication
 		}
 		
 		# Problem areas
-		$query = "SELECT {$this->settings['database']}.categories.category as 'Problem area', COUNT(*) as Total
+		$query = "SELECT {$this->settings['database']}.categories.category AS 'Problem area', COUNT(*) AS Total
 			FROM {$this->settings['database']}.{$this->settings['table']},{$this->settings['database']}.categories
 			WHERE {$this->settings['database']}.{$this->settings['table']}.categoryId = {$this->settings['database']}.categories.id
 			GROUP BY category
@@ -1630,7 +1630,20 @@ class helpdesk extends frontControllerApplication
 		# Average response time
 		// $query = "SELECT (ROUND((AVG(UNIX_TIMESTAMP(timeCompleted) - UNIX_TIMESTAMP(timeSubmitted))) / ((7/5) * 24 * 60 * 60),1)) as workingdays FROM {$this->settings['database']}.{$this->settings['table']} WHERE ((UNIX_TIMESTAMP(timeCompleted) >= UNIX_TIMESTAMP(timeSubmitted)) AND (((UNIX_TIMESTAMP(timeCompleted) - UNIX_TIMESTAMP(timeSubmitted)) / ((7/5) * 24 * 60 * 60)) < 21));";
 		// $html .= "\n<p>Average duration to resolve calls: <strong>{$data['workingdays']} working days</strong><br /><span class=\"comment\">Note: Average resolution duration is not necessary reliable, due to incomplete legacy data and a small number of long-standing calls which skew the data.</span></p>";
-		$query = "SELECT ROUND(((UNIX_TIMESTAMP(timeCompleted) - UNIX_TIMESTAMP(timeSubmitted)) / ((7/5) * 24 * 60 * 60)),0) as 'Working days', COUNT(id) as 'Number of calls' FROM {$this->settings['database']}.{$this->settings['table']} WHERE (UNIX_TIMESTAMP(timeCompleted) >= UNIX_TIMESTAMP(timeSubmitted)) GROUP BY 'Working days' ORDER BY 'Working days';";
+		$query = "
+			SELECT
+				workingDays AS 'Working days',
+				FORMAT(COUNT(id), 0) AS 'Calls'
+				FROM (
+					SELECT
+						id,
+						ROUND(((UNIX_TIMESTAMP(timeCompleted) - UNIX_TIMESTAMP(timeSubmitted)) / ((7/5) * 24 * 60 * 60)),0) AS 'workingDays'
+					FROM calls
+					WHERE timeCompleted >= timeSubmitted
+				) AS stats
+			GROUP BY workingDays
+			ORDER BY workingDays;
+		";
 		$data = $this->databaseConnection->getData ($query);
 		$html .= "\n<h3>(Working) days to resolve calls:</h3>";
 		$html .= "\n" . application::htmlTable ($data, array (), 'lines compressed', false);
