@@ -551,7 +551,7 @@ class helpdesk extends frontControllerApplication
 			'currentStatus' => array ('default' => ($this->userIsAdministrator ? ($editCall['currentStatus'] == 'submitted' ? '' : $editCall['currentStatus']) : ''), 'disallow' => ($this->userIsAdministrator ? 'submitted' : '')),	// The currentStatus is deliberately wiped so that the admin remembers to change it
 			'imageFile' => array ('directory' => $_SERVER['DOCUMENT_ROOT'] . $this->baseUrl . '/images/', 'forcedFileName' => application::generatePassword (8, false), 'allowedExtensions' => array ('jpg', 'jpeg', 'png', 'gif'), 'lowercaseExtension' => true, 'required' => false, 'thumbnail' => true, 'flatten' => true, 'editable' => false, 'previewLocationPrefix' => "{$this->baseUrl}/images/", 'thumbnailExpandable' => true, ),
 			'categoryId' => array ('values' => $this->getCategories ()),
-			'internalNotes' => array ('rows' => 3, ),
+			'internalNotes' => array ('rows' => 3, 'title' => 'Internal notes:<br /><em><img src="/images/icons/exclamation.png" /> NB: Not visible to the user</em>'),
 		);
 		
 		# If an admin, default the administrator username if not yet set
