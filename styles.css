@@ -26,3 +26,4 @@
 #helpdesk #call, #helpdesk .messagebox .quotedpart {display: none;}
 #helpdesk p#messageadded {margin-bottom: 2em;}
 #helpdesk div.messagebox {margin-bottom: 2em;}
+#helpdesk .metadataform td:first-child {min-width: 250px;}

@@ -525,7 +525,7 @@ class helpdesk extends frontControllerApplication
 			'formCompleteText' => false,
 			'databaseConnection' => $this->databaseConnection,
 			'submitButtonText' => 'Update main call details',
-			'div' => 'ultimateform horizontalonly helpdeskcall' . ($this->userIsAdministrator ? ' editable' : ''),
+			'div' => 'ultimateform horizontalonly helpdeskcall metadataform' . ($this->userIsAdministrator ? ' editable' : ''),
 			'cols' => $this->settings['cols'],
 			'unsavedDataProtection' => true,
 			'requiredFieldIndicator' => false,
