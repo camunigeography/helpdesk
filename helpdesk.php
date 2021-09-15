@@ -29,6 +29,7 @@ class helpdesk extends frontControllerApplication
 			'callsEmail' => NULL,		// Address for incoming/outgoing e-mail for calls
 			'incomingMailLog' => false,		// Set path or false; file must be writeable by incoming mail processor user, e.g. 'Debian-exim'
 			'pearLocation' => false,		// If not already in the include_path, e.g. '/usr/share/php/' for Debian/Ubuntu
+			'userLink' => false,	// Link to information about the user, with %username in the string
 		);
 		
 		# Return the defaults
@@ -758,7 +759,12 @@ class helpdesk extends frontControllerApplication
 		foreach ($messages as $id => $message) {
 			$html .= "\n\n<div class=\"messagebox graybox shadow\">";
 			$html .= "\n<p class=\"small right\">" . date ('g.ia, jS F Y', strtotime ($message['createdAt'])) . '</p>';
-			$html .= "\n<h4 id=\"message{$id}\"><a href=\"#message{$id}\">#</a> " . ($i == 0 ? 'Initial request' : 'Reply') . ' from&nbsp; ' . $message['email'] . ':</h4>';
+			$userReference = $message['email'];
+			if ($this->settings['userLink'] && $this->userIsAdministrator && ($i == 0)) {
+				$username = str_replace ('@' . $this->settings['emailDomain'], '', $message['email']);
+				$userReference = '<a href="' . str_replace ('%username', $username, $this->settings['userLink']) . '" target="_blank" title="[Link opens in a new window]" class="noarrow">' . $username . '</a>' . '@' . $this->settings['emailDomain'];
+			}
+			$html .= "\n<h4 id=\"message{$id}\"><a href=\"#message{$id}\">#</a> " . ($i == 0 ? 'Initial request' : 'Reply') . ' from&nbsp; ' . $userReference . ':</h4>';
 			
 			# Add the message
 			$html .= "\n" . $this->formattedMessageBox ($message['message'], $id);
