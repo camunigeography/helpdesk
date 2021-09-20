@@ -552,7 +552,7 @@ class helpdesk extends frontControllerApplication
 			'currentStatus' => array ('default' => ($this->userIsAdministrator ? ($editCall['currentStatus'] == 'submitted' ? '' : $editCall['currentStatus']) : ''), 'disallow' => ($this->userIsAdministrator ? 'submitted' : '')),	// The currentStatus is deliberately wiped so that the admin remembers to change it
 			'imageFile' => array ('directory' => $_SERVER['DOCUMENT_ROOT'] . $this->baseUrl . '/images/', 'forcedFileName' => application::generatePassword (8, false), 'allowedExtensions' => array ('jpg', 'jpeg', 'png', 'gif'), 'lowercaseExtension' => true, 'required' => false, 'thumbnail' => true, 'flatten' => true, 'editable' => false, 'previewLocationPrefix' => "{$this->baseUrl}/images/", 'thumbnailExpandable' => true, ),
 			'categoryId' => array ('values' => $this->getCategories ()),
-			'internalNotes' => array ('rows' => 3, 'title' => 'Internal notes:<br /><em><img src="/images/icons/exclamation.png" /> NB: Not visible to the user</em>'),
+			'internalNotes' => array ('rows' => 3, 'title' => 'Internal notes:<br /><em>' . $this->icon ('exclamation') . ' NB: Not visible to the user</em>'),
 		);
 		
 		# If an admin, default the administrator username if not yet set
@@ -826,7 +826,7 @@ class helpdesk extends frontControllerApplication
 		));
 		
 		# Add reply field
-		$form->heading ('p', '<img src="/images/icons/comment.png" class="icon" /> When replying, please trim any lines from the quoted text that are no longer relevant, to help keep e-mails shorter.');
+		$form->heading ('p', $this->icon ('comment') . ' When replying, please trim any lines from the quoted text that are no longer relevant, to help keep e-mails shorter.');
 		$form->textarea (array (
 			'name' => 'message',
 			'title' => 'Reply',
@@ -1252,7 +1252,7 @@ class helpdesk extends frontControllerApplication
 		
 		# If editing is required, show the call details
 		$html .= "\n\t" . '<h3>Call details</h3>';
-		$html .= "\n\t" . '<p><a id="calllink" href="#">&#9662; <img src="/images/icons/application_form_edit.png" class="icon" /> Show call details</a></p>';
+		$html .= "\n\t" . '<p><a id="calllink" href="#">&#9662; ' . $this->icon ('application_form_edit') . ' Show call details</a></p>';
 		$html .= "\n\t" . '<div id="call">';
 		$html .= $this->callMetadataForm ($call['id']);
 		$html .= "\n" . '</div>';
@@ -1522,7 +1522,7 @@ class helpdesk extends frontControllerApplication
 		$headings = array (
 			'building'		=> 'Building:',
 			'room'			=> 'Room:',
-			'details'		=> ($callIsEditable ? "<a class=\"actions\" href=\"{$this->baseUrl}/calls/{$call['id']}/\"><img src=\"/images/icons/pencil.png\" alt=\"\" class=\"icon\" /> <strong>Edit</strong></a>" : ''),
+			'details'		=> ($callIsEditable ? "<a class=\"actions\" href=\"{$this->baseUrl}/calls/{$call['id']}/\">" . $this->icon ('pencil') . ' <strong>Edit</strong></a>' : ''),
 			'category'		=> 'Category:',
 			'currentStatus'	=> 'Current status:',
 			'reply'			=> 'Latest reply:',
