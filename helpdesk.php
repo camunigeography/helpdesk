@@ -635,10 +635,10 @@ class helpdesk extends frontControllerApplication
 	private function saveCall ($result, $isUpdate, &$html)
 	{
 		# Move the image to its final URL
-		#!# Not clear why this doesn't apply for adding a call
-		$imageFile = false;
+		#!# Not clear why this doesn't apply for editing a call
+		$attachments = array ();
 		if (!$isUpdate) {
-			$imageFile = $result['imageFile'];
+			$attachments = array ($result['imageFile'] => true);	// true indicates file already exists
 			unset ($result['imageFile']);
 		}
 		
@@ -652,40 +652,14 @@ class helpdesk extends frontControllerApplication
 		# Determine the call number
 		$callId = ($isUpdate ? $result['id'] : $this->databaseConnection->getLatestId ());
 		
-		# Move the image to its final URL
-		#!# Eliminate and use $attachments as below instead
-		$this->moveImage ($imageFile, $callId);
-		
 		# Assemble and insert the message
 		if (!$isUpdate) {
 			$from = $result['username'] . '@' . $this->settings['emailDomain'];
-			$this->addMessage ($callId, $result['details'], NULL, $from, $attachments = array (), $isUpdate = false);
+			$this->addMessage ($callId, $result['details'], NULL, $from, $attachments, $isUpdate = false);
 		}
 		
 		# Return the call ID
 		return $callId;
-	}
-	
-	
-	# Function to move an image
-	private function moveImage ($image, $callId)
-	{
-		# No action if no image
-		if (!$image) {return;}
-		
-		# Determine the original image location
-		$imageFileOriginal = $this->attachmentsDirectory . $image;
-		
-		# Determine the target location
-		$extension = pathinfo ($image, PATHINFO_EXTENSION);
-		$imageFilenameNew = $callId . '-1' . '.' . $extension;		// e.g. 122-1.png for call #122
-		$imageFileNew = $this->attachmentsDirectory . $imageFilenameNew;
-		
-		# Move the image into place
-		rename ($imageFileOriginal, $imageFileNew);
-		
-		# Update the database state for this call
-		$this->databaseConnection->update ($this->settings['database'], $this->settings['table'], array ('imageFile' => $imageFilenameNew), array ('id' => $callId));
 	}
 	
 	
@@ -773,6 +747,9 @@ class helpdesk extends frontControllerApplication
 			# Add the message
 			$html .= "\n" . $this->formattedMessageBox ($message['message'], $id);
 			
+			# Show image(s) attached to this message if present
+			$html .= "\n" . $this->showImageAttachments ($call['id'], $message['id']);
+			
 			# End box
 			$html .= "\n</div>";
 			$i++;
@@ -789,6 +766,44 @@ class helpdesk extends frontControllerApplication
 		$html .= "\n<h4>Add reply:</h4>";
 		$html .= $this->messageForm ($call);
 		$html .= "\n</div>";
+		
+		# Return the HTML
+		return $html;
+	}
+	
+	
+	# Function to show image attachments
+	# Filename format is {callId}-{messageId}-{index}.{extension}; these are read dynamically rather than using any database storage
+	private function showImageAttachments ($callId, $messageId)
+	{
+		# Start the HTML
+		$html = '';
+		
+		# Start from index 0 and work upwards until no longer present
+		$i = 0;
+		while (true) {
+			
+			# Check if this index has an image, checking each extension
+			$imagePresent = false;	// For this $i
+			foreach ($this->settings['supportedImageExtensions'] as $extension) {
+				$imagePath = $this->baseUrl . '/images/' . $callId . '-' . $messageId . '-' . $i . '.' . $extension;
+				if (file_exists ($_SERVER['DOCUMENT_ROOT'] . $imagePath)) {
+					$imagePresent = true;
+					break;	// Do not check further extensions
+				}
+			}
+			
+			# Break loop if image not present - no point checking further $i increments
+			if (!$imagePresent) {
+				break;
+			}
+			
+			# Create the HTML
+			$html .= "<a href=\"{$imagePath}\" target=\"_blank\"><img src=\"{$imagePath}\" width=\"300\" class=\"shadow\" /></a>";
+			
+			# Try next
+			$i++;
+		}
 		
 		# Return the HTML
 		return $html;
@@ -890,6 +905,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Function to add a message to a call, which will also send an e-mail
+	# NB $attachments should be supplied as array ($filename => true if file exists / $binaryPayload, ...)
 	private function addMessage ($callId, $message, $messageHtmlOriginal = NULL, $from, $attachments, $isUpdate = true)
 	{
 		# Get the details of the previous message, for use in the e-mail reply
@@ -916,19 +932,41 @@ class helpdesk extends frontControllerApplication
 		# Get the message ID
 		$messageId = ($result ? $this->databaseConnection->getLatestId () : false);
 		
-		# Save the attachments
-		if ($attachments) {
-			foreach ($attachments as $filename => $binaryPayload) {
-				$file = $this->attachmentsDirectory . $callId . '-' . $filename;
-				file_put_contents ($file, $binaryPayload);
-			}
-		}
+		# Save the attachments, if any
+		$this->saveAttachments ($attachments, $callId, $messageId);
 		
 		# Send e-mail
 		$html .= $this->emailCorrespondence ($callId, $message, $previousMessage);
 		
 		# Return the message ID
 		return $messageId;
+	}
+	
+	
+	# Function to save attachments; filename format is {callId}-{messageId}-{index}.{extension} - see showImageAttachments ()
+	private function saveAttachments ($attachments, $callId, $messageId)
+	{
+		# End if none
+		if (!$attachments) {return;}
+		
+		# Loop through each attachment and save it
+		$i = 0;
+		foreach ($attachments as $filename => $attachment /* either true for saved file, or binary payload */) {
+			
+			# Determine the destination
+			$extension = pathinfo ($filename, PATHINFO_EXTENSION);
+			$fileDestination = $this->attachmentsDirectory . $callId . '-' . $messageId . '-' . $i . '.' . $extension;
+			
+			# Move/save the file
+			if ($attachment === true) {		// Already exists, so move
+				rename ($this->attachmentsDirectory . $filename, $fileDestination);
+			} else {	// Is binary payload, so write
+				file_put_contents ($fileDestination, $attachment);
+			}
+			
+			# Next
+			$i++;
+		}
 	}
 	
 	
@@ -1699,6 +1737,7 @@ class helpdesk extends frontControllerApplication
 	public function ingestmail ()
 	{
 		# Load the mail importer and decode the mail
+		# NB $attachments are supplied as array ($filename => true if file exists / $binaryPayload, ...)
 		require_once ('importMail.php');
 		$importMail = new importMail ($this->settings['pearLocation']);
 		list ($from, $subject, $time, $message, $attachments) = $importMail->main ($simplifyFrom = true);
