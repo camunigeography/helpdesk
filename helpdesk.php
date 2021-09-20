@@ -234,6 +234,9 @@ class helpdesk extends frontControllerApplication
 			}
 		}
 		
+		# Assemble the attachments directory
+		$this->attachmentsDirectory = $_SERVER['DOCUMENT_ROOT'] . $this->baseUrl . '/images/';
+		
 		# Confirm success
 		return true;
 	}
@@ -466,7 +469,7 @@ class helpdesk extends frontControllerApplication
 			'attributes' => array (
 				'subject' => array ('autofocus' => true, ),
 				'location' => array ('disallow' => '(http|https)://', ),
-				'imageFile' => array ('directory' => $_SERVER['DOCUMENT_ROOT'] . $this->baseUrl . '/images/', 'forcedFileName' => application::generatePassword (8, false), 'allowedExtensions' => $this->settings['supportedImageExtensions'], 'lowercaseExtension' => true, 'required' => false, 'thumbnail' => true, 'flatten' => true, 'previewLocationPrefix' => "{$this->baseUrl}/images/", 'thumbnailExpandable' => true, ),
+				'imageFile' => array ('directory' => $this->attachmentsDirectory, 'forcedFileName' => application::generatePassword (8, false), 'allowedExtensions' => $this->settings['supportedImageExtensions'], 'lowercaseExtension' => true, 'required' => false, 'thumbnail' => true, 'flatten' => true, 'previewLocationPrefix' => "{$this->baseUrl}/images/", 'thumbnailExpandable' => true, ),
 				'username' => array ('type' => 'select', 'values' => $this->userList (true), 'description' => "This box is shown only to {$this->settings['type']} staff.", 'default' => $this->user, ),
 				'categoryId' => array ('values' => $this->getCategories ($omitHidden = true), ),	// New calls have older categories hidden
 			),
@@ -551,7 +554,7 @@ class helpdesk extends frontControllerApplication
 			'location' => array ('disallow' => '(http|https)://', ),
 			#!# Support for ultimateForm->select():regexp needed
 			'currentStatus' => array ('default' => ($this->userIsAdministrator ? ($editCall['currentStatus'] == 'submitted' ? '' : $editCall['currentStatus']) : ''), 'disallow' => ($this->userIsAdministrator ? 'submitted' : '')),	// The currentStatus is deliberately wiped so that the admin remembers to change it
-			'imageFile' => array ('directory' => $_SERVER['DOCUMENT_ROOT'] . $this->baseUrl . '/images/', 'forcedFileName' => application::generatePassword (8, false), 'allowedExtensions' => $this->settings['supportedImageExtensions'], 'lowercaseExtension' => true, 'required' => false, 'thumbnail' => true, 'flatten' => true, 'editable' => false, 'previewLocationPrefix' => "{$this->baseUrl}/images/", 'thumbnailExpandable' => true, ),
+			'imageFile' => array ('directory' => $this->attachmentsDirectory, 'forcedFileName' => application::generatePassword (8, false), 'allowedExtensions' => $this->settings['supportedImageExtensions'], 'lowercaseExtension' => true, 'required' => false, 'thumbnail' => true, 'flatten' => true, 'editable' => false, 'previewLocationPrefix' => "{$this->baseUrl}/images/", 'thumbnailExpandable' => true, ),
 			'categoryId' => array ('values' => $this->getCategories ()),
 			'internalNotes' => array ('rows' => 3, 'title' => 'Internal notes:<br /><em>' . $this->icon ('exclamation') . ' NB: Not visible to the user</em>'),
 		);
@@ -671,12 +674,12 @@ class helpdesk extends frontControllerApplication
 		if (!$image) {return;}
 		
 		# Determine the original image location
-		$imageFileOriginal = $_SERVER['DOCUMENT_ROOT'] . $this->baseUrl . '/images/' . $image;
+		$imageFileOriginal = $this->attachmentsDirectory . $image;
 		
 		# Determine the target location
 		$extension = pathinfo ($image, PATHINFO_EXTENSION);
 		$imageFilenameNew = $callId . '-1' . '.' . $extension;		// e.g. 122-1.png for call #122
-		$imageFileNew = $_SERVER['DOCUMENT_ROOT'] . $this->baseUrl . '/images/' . $imageFilenameNew;
+		$imageFileNew = $this->attachmentsDirectory . $imageFilenameNew;
 		
 		# Move the image into place
 		rename ($imageFileOriginal, $imageFileNew);
@@ -915,9 +918,8 @@ class helpdesk extends frontControllerApplication
 		
 		# Save the attachments
 		if ($attachments) {
-			$directory = $_SERVER['DOCUMENT_ROOT'] . $this->baseUrl . '/images/';
 			foreach ($attachments as $filename => $binaryPayload) {
-				$file = $directory . $callId . '-' . $filename;
+				$file = $this->attachmentsDirectory . $callId . '-' . $filename;
 				file_put_contents ($file, $binaryPayload);
 			}
 		}
