@@ -139,10 +139,10 @@ class helpdesk extends frontControllerApplication
 			
 			-- Administrators
 			CREATE TABLE `administrators` (
-			  `id` varchar(191) COLLATE utf8mb4_unicode_ci PRIMARY KEY NOT NULL COMMENT 'Username',
-			  `active` enum('','Yes','No') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Yes' COMMENT 'Currently active?',
-			  `receiveHelpdeskEmail` enum('Yes','No') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Yes',
-			  `state` text COLLATE utf8mb4_unicode_ci COMMENT 'Headings expanded'
+			  `id` varchar(191) PRIMARY KEY NOT NULL COMMENT 'Username',
+			  `active` enum('','Yes','No') NOT NULL DEFAULT 'Yes' COMMENT 'Currently active?',
+			  `receiveHelpdeskEmail` enum('Yes','No') NOT NULL DEFAULT 'Yes',
+			  `state` text COMMENT 'Headings expanded'
 			) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Helpdesk administrators';
 			
 			-- Settings
@@ -155,28 +155,28 @@ class helpdesk extends frontControllerApplication
 			-- Calls
 			CREATE TABLE `calls` (
 			  `id` int PRIMARY KEY NOT NULL AUTO_INCREMENT COMMENT 'Call number',
-			  `subject` varchar(60) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Subject',
-			  `username` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'User',
+			  `subject` varchar(60) NOT NULL COMMENT 'Subject',
+			  `username` varchar(255) NOT NULL COMMENT 'User',
 			  `categoryId` int NOT NULL COMMENT 'Category of problem',
-			  `details` text COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Details of problem, or describe what you did',
+			  `details` text NOT NULL COMMENT 'Details of problem, or describe what you did',
 			  `imageFile` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Optional image (e.g. screenshot)',
 			  `timeSubmitted` datetime NOT NULL,
 			  `lastUpdated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Time this call was last updated (or created)',
-			  `administratorId` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Staff',
-			  `currentStatus` enum('submitted','timetabled','researching','completed','deferred') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'submitted' COMMENT 'Status',
-			  `reply` text COLLATE utf8mb4_unicode_ci NOT NULL,
+			  `administratorId` varchar(255) NOT NULL COMMENT 'Staff',
+			  `currentStatus` enum('submitted','timetabled','researching','completed','deferred') NOT NULL DEFAULT 'submitted' COMMENT 'Status',
+			  `reply` text NOT NULL,
 			  `timeOpened` datetime DEFAULT NULL,
 			  `timeCompleted` datetime DEFAULT NULL,
-			  `internalNotes` text COLLATE utf8mb4_unicode_ci
+			  `internalNotes` text
 			) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 			
 			-- Messages
 			CREATE TABLE `messages` (
 			  `id` int NOT NULL AUTO_INCREMENT COMMENT 'Automatic key',
 			  `callId` int NOT NULL COMMENT 'Call #',
-			  `message` text COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Message',
+			  `message` text NOT NULL COMMENT 'Message',
 			  `messageHtmlOriginal` TEXT NULL COMMENT 'Message, as originally transmitted by e-mail',
-			  `email` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'E-mail',
+			  `email` VARCHAR(255) NOT NULL COMMENT 'E-mail',
 			  `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Automatic timestamp',
 			  PRIMARY KEY (`id`)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Messages';
@@ -184,7 +184,7 @@ class helpdesk extends frontControllerApplication
 			-- Categories
 			CREATE TABLE `categories` (
 			  `id` int PRIMARY KEY NOT NULL AUTO_INCREMENT,
-			  `category` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Category',
+			  `category` varchar(255) NOT NULL COMMENT 'Category',
 			  `listpriority` DECIMAL(2,0) NOT NULL DEFAULT '0' COMMENT 'List priority (smaller numbers = earlier)',
 			  `hide` TINYINT NULL DEFAULT NULL COMMENT 'Hide for new calls?'
 			) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -192,8 +192,8 @@ class helpdesk extends frontControllerApplication
 			-- Searches
 			CREATE TABLE `searches` (
 			  `id` int PRIMARY KEY NOT NULL AUTO_INCREMENT COMMENT 'Automatic key',
-			  `search` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Search phrase',
-			  `username` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Username',
+			  `search` varchar(255) NOT NULL COMMENT 'Search phrase',
+			  `username` varchar(20) NOT NULL COMMENT 'Username',
 			  `datetime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Automatic timestamp'
 			) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Table of searches';
 		";
