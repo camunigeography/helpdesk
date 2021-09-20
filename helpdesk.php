@@ -18,7 +18,7 @@ class helpdesk extends frontControllerApplication
 			'div' => 'helpdesk',
 			'h1'					=> NULL,
 			'institution'			=> NULL,	// Institution name in "welcome to the %institution helpdesk"
-			'type'					=> NULL,	// Used in: "the %type staff" and "some %type problems"
+			'type'					=> NULL,	// Used in: "the %type staff" and "some %type matters"
 			'busyThreshold' => 25,	// The number of calls above which the Staff are 'busy'
 			'administrators' => true,
 			'authentication' => true,	// All pages require authentication
@@ -50,14 +50,14 @@ class helpdesk extends frontControllerApplication
 				'icon' => 'house',
 			),
 			'report' => array (
-				'description' => 'Report a problem',
-				'tab' => 'Report a problem',
+				'description' => 'Request help or submit an enquiry',
+				'tab' => 'Request help / enquiry',
 				'icon' => 'add',
 			),
 			'calls' => array (
-				'description' => 'View/edit submitted problems',
+				'description' => 'View/edit submitted issues',
 				'url' => 'calls/',
-				'tab' => 'View/edit submitted problems',
+				'tab' => 'View/edit submitted issues',
 				'icon' => 'application_double',
 			),
 			'call' => array (
@@ -112,9 +112,9 @@ class helpdesk extends frontControllerApplication
 	var $currentStatusDefinitions = array (
 		'submitted'		=> 'not yet scheduled by %type staff',
 		'timetabled'	=> '%type staff have read the request and scheduled time to implement it',
-		'researching'	=> '%type staff have read the request a solution to the problem is being researched',
-		'completed'		=> 'the problem is believed to be resolved',
-		'deferred'		=> 'the problem has been scheduled for the longer-term',
+		'researching'	=> '%type staff have read the request, and a solution is being researched',
+		'completed'		=> 'the matter is believed to be resolved',
+		'deferred'		=> 'the matter has been scheduled for the longer-term',
 	);
 	
 	# Define the available levels of busyness
@@ -157,8 +157,8 @@ class helpdesk extends frontControllerApplication
 			  `id` int PRIMARY KEY NOT NULL AUTO_INCREMENT COMMENT 'Call number',
 			  `subject` varchar(60) NOT NULL COMMENT 'Subject',
 			  `username` varchar(255) NOT NULL COMMENT 'User',
-			  `categoryId` int NOT NULL COMMENT 'Category of problem',
-			  `details` text NOT NULL COMMENT 'Details of problem, or describe what you did',
+			  `categoryId` int NOT NULL COMMENT 'Category',
+			  `details` text NOT NULL COMMENT 'Details of help needed, or enquiry',
 			  `imageFile` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Optional image (e.g. screenshot)',
 			  `timeSubmitted` datetime NOT NULL,
 			  `lastUpdated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Time this call was last updated (or created)',
@@ -212,7 +212,7 @@ class helpdesk extends frontControllerApplication
 		# Get the user details
 		if ($this->action != 'api') {
 			if (!$this->userDetails = $this->userDetails ()) {
-				echo "<p>Welcome to the {$this->settings['institution']} online helpdesk system for requesting help with {$this->settings['type']} problems.</p>";
+				echo "<p>Welcome to the {$this->settings['institution']} online helpdesk system for requesting help with {$this->settings['type']} matters.</p>";
 				$this->accountDetails ();
 				return false;
 			}
@@ -271,14 +271,14 @@ class helpdesk extends frontControllerApplication
 		$html = '';
 		
 		# Start the page
-		$html .= "\n\n" . "<p>Welcome, {$this->userDetails['forename']}, to the {$this->settings['institution']} online helpdesk system for requesting help with {$this->settings['type']} problems.</p>";
+		$html .= "\n\n" . "<p>Welcome, {$this->userDetails['forename']}, to the {$this->settings['institution']} online helpdesk system for requesting help with {$this->settings['type']} matters.</p>";
 		
 		# Add extra message, if enabled
 		if ($this->settings['homepageMessageHtml']) {
 			$html .= "\n<br />\n" . $this->settings['homepageMessageHtml'];
 		}
 		
-		# Show current problems
+		# Show current issues
 		if ($this->userIsAdministrator) {
 			$html .= "\n<h2>Unresolved calls <span>[admins only]</span></h2>";
 			$count = $this->totalCalls ();
@@ -286,17 +286,17 @@ class helpdesk extends frontControllerApplication
 		}
 		
 		# Show my current calls
-		$html .= "\n<h2>My current/recent problems</h2>";
+		$html .= "\n<h2>My current/recent calls</h2>";
 		$html .= $this->showCallRate (false);
 		if (!$calls = $this->getCalls (false, $limitToCurrentUser = true)) {
-			$html .= "\n<p>{$this->tick} You do not appear to have any logged {$this->settings['type']} problems outstanding" . ($this->userIsAdministrator ? '  that you submitted for yourself' : '') . '.</p>';
+			$html .= "\n<p>{$this->tick} You do not appear to have any logged {$this->settings['type']} matters outstanding" . ($this->userIsAdministrator ? '  that you submitted for yourself' : '') . '.</p>';
 		} else {
 			$html .= $this->renderCallsList ($calls);
 		}
 		
 		# Show the reporting screen
 		#!# After adding a new call, the block above needs to be regenerated
-		$html .= "\n<h2>Report a new problem</h2>";
+		$html .= "\n<h2>Request help / enquiry</h2>";
 		$html .= $this->reportForm ();
 		
 		# Show the HTML
@@ -427,7 +427,7 @@ class helpdesk extends frontControllerApplication
 	}
 	
 	
-	# Report problem screen
+	# Issue problem screen
 	public function report ()
 	{
 		# Show the call form
@@ -678,7 +678,7 @@ class helpdesk extends frontControllerApplication
 		$html  = '';
 		if ($showHeading) {$html .= "\n<h2>Calls outstanding</h2>";}
 		$html .= "\n<p>Note: the current call rate is <strong>{$description}</strong> ({$count} calls).</p>";
-		// $html .= "\n<p>Calls are prioritised, and submitting here will be the quickest way of having problems dealt with.</p>";
+		// $html .= "\n<p>Calls are prioritised, and submitting here will be the quickest way of having issues dealt with.</p>";
 		
 		# Return the HTML
 		return $html;
@@ -712,11 +712,11 @@ class helpdesk extends frontControllerApplication
 			$conditions = array ('hide' => NULL);
 		}
 		
-		# Get the problems, in list priority order
-		$problems = $this->databaseConnection->selectPairs ($this->settings['database'], 'categories', $conditions, array ('id', 'category'), true, 'listpriority');
+		# Get the categories, in list priority order
+		$categories = $this->databaseConnection->selectPairs ($this->settings['database'], 'categories', $conditions, array ('id', 'category'), true, 'listpriority');
 		
 		# Return the list
-		return $problems;
+		return $categories;
 	}
 	
 	
@@ -1339,9 +1339,9 @@ class helpdesk extends frontControllerApplication
 		# End, with message, if no calls
 		if (!$calls) {
 			if ($this->userIsAdministrator) {
-				$html = "\n<p>{$this->tick} There are no {$this->settings['type']} problems outstanding." . ($this->action == 'calls' ? ' CONGRATULATIONS! Enjoy it while it lasts ...' : '') . '</p>';
+				$html = "\n<p>{$this->tick} There are no {$this->settings['type']} issues outstanding." . ($this->action == 'calls' ? ' CONGRATULATIONS! Enjoy it while it lasts ...' : '') . '</p>';
 			} else {
-				$html = "\n<p>{$this->tick} You do not appear to have any logged {$this->settings['type']} problems outstanding.</p>";
+				$html = "\n<p>{$this->tick} You do not appear to have any logged {$this->settings['type']} matters outstanding.</p>";
 			}
 			
 			# Return the HTML
@@ -1351,7 +1351,7 @@ class helpdesk extends frontControllerApplication
 		# Introduction
 		$html .= "\n\n" . '<p class="helpdeskdescription">';
 		if ($limitDate) {
-			$html .= 'Problems ' . ($this->userIsAdministrator ? '' : 'resolved within the last ' . $this->settings['completedJobExpiryDays'] . ' day' . (($this->settings['completedJobExpiryDays'] == 1) ? '' : 's') . ' or ') . 'unresolved (' . count ($calls) . ') are listed below, ' . ($this->settings['listMostRecentFirst'] ? 'most recent' : 'earliest') . ' first.';
+			$html .= 'Matters ' . ($this->userIsAdministrator ? '' : 'resolved within the last ' . $this->settings['completedJobExpiryDays'] . ' day' . (($this->settings['completedJobExpiryDays'] == 1) ? '' : 's') . ' or ') . 'unresolved (' . count ($calls) . ') are listed below, ' . ($this->settings['listMostRecentFirst'] ? 'most recent' : 'earliest') . ' first.';
 			if (!strlen ($searchTerm)) {
 				$html .= " You can also: " . ($limitDate ? '<a href="' . $this->baseUrl . '/calls/all.html">include any older, resolved items also' : '<a href="' . $this->baseUrl . '/calls/">list only recent/unresolved items') . '</a>.';
 			}
@@ -1484,7 +1484,7 @@ class helpdesk extends frontControllerApplication
 		$listMostRecentFirst = ($listMostRecentFirst || $this->settings['listMostRecentFirst'] && !$this->userIsAdministrator);
 		$query .= ' ORDER BY id' . ($listMostRecentFirst ? ' DESC' : '') . ';';
 		
-		# Execute the query and obtain an array of problems from it; if there are none, state so
+		# Execute the query and obtain an array of issues from it; if there are none, state so
 		$calls = $this->databaseConnection->getData ($query, "{$this->settings['database']}.{$this->settings['table']}", true, $preparedStatementValues);
 		
 		# If a single call is requested, return only that
@@ -1600,7 +1600,7 @@ class helpdesk extends frontControllerApplication
 	}
 	
 	
-	# Facility to amend the problem types
+	# Facility to amend the categories
 	public function categories ($item = false)
 	{
 		# Start the HTML
@@ -1659,8 +1659,8 @@ class helpdesk extends frontControllerApplication
 			$html .= "\n<p>Total calls logged per working day: <strong>{$data['count']}</strong></p>";
 		}
 		
-		# Problem areas
-		$query = "SELECT {$this->settings['database']}.categories.category AS 'Problem area', COUNT(*) AS Total
+		# Categories
+		$query = "SELECT {$this->settings['database']}.categories.category AS 'Category', COUNT(*) AS Total
 			FROM {$this->settings['database']}.{$this->settings['table']},{$this->settings['database']}.categories
 			WHERE {$this->settings['database']}.{$this->settings['table']}.categoryId = {$this->settings['database']}.categories.id
 			GROUP BY category
@@ -1854,10 +1854,10 @@ class helpdesk extends frontControllerApplication
 		}
 		
 		# Define description
-		$data['descriptionHtml'] = "<p>The online helpdesk system enables you to requesting help with {$this->settings['type']} problems.</p>";
+		$data['descriptionHtml'] = "<p>The online helpdesk system enables you to requesting help with {$this->settings['type']} matters.</p>";
 		
 		# Add key links
-		$data['links']["{$this->baseUrl}/report.html"] = '{icon:add} Report a problem';
+		$data['links']["{$this->baseUrl}/report.html"] = '{icon:add} Request help or submit an enquiry';
 		
 		# Add admin links
 		if (isSet ($this->administrators[$username])) {
