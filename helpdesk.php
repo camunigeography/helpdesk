@@ -1753,18 +1753,18 @@ class helpdesk extends frontControllerApplication
 			);
 			file_put_contents ($this->settings['incomingMailLog'], print_r ($emailData, true), FILE_APPEND);
 		}
-
+		
+		# Discard the mail, taking no action, if the subject shows it is a bounce
+		if (preg_match ('/^Automatic reply:/', $subject)) {
+			return false;
+		}
+		
 		# Extract the call ID from the subject line
 		if (!preg_match ('/\[Helpdesk\]\[([0-9]+)\].*/', $subject, $matches)) {
 			return false;
 			#!# Return bounce
 		}
 		$callId = $matches[1];
-		
-		# Discard the mail, taking no action, if the subject shows it is a bounce
-		if (preg_match ('/^Automatic reply:/', $subject)) {
-			return false;
-		}
 		
 		# Validate the call by getting it from the database
 		if (!$call = $this->getCalls ($callId)) {
