@@ -130,6 +130,7 @@ class helpdesk extends frontControllerApplication
 	
 	# Search term result
 	private $searchTerm = false;
+	private $searchStatus = false;
 	
 	
 	# Database structure definition
@@ -1144,7 +1145,7 @@ class helpdesk extends frontControllerApplication
 		$this->databaseConnection->insert ($this->settings['database'], 'searches', $log);
 		
 		# Determine if the call dates should be limited, i.e. if only showing unresolved items
-		$limitDate = ($result['what'] == 'unresolved');
+		$limitDate = ($this->searchStatus == 'unresolved');
 		
 		# Get the calls
 		if (!$calls = $this->getCalls (false, false, $limitDate, $this->searchTerm, true)) {
@@ -1211,6 +1212,7 @@ class helpdesk extends frontControllerApplication
 		
 		# Set the result
 		$this->searchTerm = $result['q'];
+		$this->searchStatus = $result['what'];
 	}
 	
 	
