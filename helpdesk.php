@@ -551,7 +551,7 @@ class helpdesk extends frontControllerApplication
 		
 		# Define form overloading attributes; some of these are used only in editing mode, but are otherwise ignored if in submission mode
 		$attributes = array (
-			'details' => array ('editable' => !$this->userIsAdministrator, ),
+			'details' => array ('editable' => false, ),
 			'location' => array ('disallow' => '(http|https)://', ),
 			#!# Support for ultimateForm->select():regexp needed
 			'currentStatus' => array ('default' => ($this->userIsAdministrator ? ($editCall['currentStatus'] == 'submitted' ? '' : $editCall['currentStatus']) : ''), 'disallow' => ($this->userIsAdministrator ? 'submitted' : '')),	// The currentStatus is deliberately wiped so that the admin remembers to change it
