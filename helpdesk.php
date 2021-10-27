@@ -1348,7 +1348,7 @@ class helpdesk extends frontControllerApplication
 		
 		# If editing is required, show the call details
 		$html .= "\n\t" . '<h3>Call details</h3>';
-		$html .= "\n\t" . '<p><a id="calllink" href="#">&#9662; ' . $this->icon ('application_form_edit') . ' Show call details</a></p>';
+		$html .= "\n\t" . '<p><a id="calllink" href="#">&#9662; ' . $this->icon ('application_form_edit') . ' View/change call summary</a></p>';
 		$html .= "\n\t" . '<div id="call">';
 		$html .= $this->callMetadataForm ($call['id']);
 		$html .= "\n" . '</div>';
