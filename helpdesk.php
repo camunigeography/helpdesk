@@ -930,7 +930,7 @@ class helpdesk extends frontControllerApplication
 								break;
 							case 'anyupdate':
 								reply = \"Do you have any update on this, or should we close the call and regard it as resolved for you?\";
-								status = 'completed';
+								status = 'researching';
 								break;
 							case 'unresponded':
 								reply = \"This call has not been responded to for a while, so it is now being closed.\\n\\n(Please reply if it is still an issue for you.)\";
