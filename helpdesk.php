@@ -490,7 +490,7 @@ class helpdesk extends frontControllerApplication
 		}
 		
 		# Save the call
-		if (!$callId = $this->saveCall ($result, false, $html /* amended by reference */)) {
+		if (!$callId = $this->saveCall ($result, false, true, $html /* amended by reference */)) {
 			echo $html;
 			return false;
 		}
@@ -557,7 +557,7 @@ class helpdesk extends frontControllerApplication
 			'currentStatus' => array ('default' => ($this->userIsAdministrator ? ($editCall['currentStatus'] == 'submitted' ? '' : $editCall['currentStatus']) : ''), 'disallow' => ($this->userIsAdministrator ? 'submitted' : '')),	// The currentStatus is deliberately wiped so that the admin remembers to change it
 			'imageFile' => array ('directory' => $this->attachmentsDirectory, 'forcedFileName' => application::generatePassword (8, false), 'allowedExtensions' => $this->settings['supportedImageExtensions'], 'lowercaseExtension' => true, 'required' => false, 'thumbnail' => true, 'flatten' => true, 'editable' => false, 'previewLocationPrefix' => "{$this->baseUrl}/images/", 'thumbnailExpandable' => true, ),
 			'categoryId' => array ('values' => $this->getCategories ()),
-			'internalNotes' => array ('rows' => 3, 'title' => 'Internal notes:<br /><em>' . $this->icon ('exclamation') . ' NB: Not visible to the user</em>'),
+			'internalNotes' => array ('rows' => 3, 'title' => 'Internal notes:<br /><em>' . $this->icon ('information') . ' NB: Not visible to the user</em>'),
 		);
 		
 		# If an admin, default the administrator username if not yet set
@@ -575,6 +575,9 @@ class helpdesk extends frontControllerApplication
 				'values' => $this->userList (),
 			);
 		}
+		
+		# Note that changes to the metadata form will not generate e-mails
+		$form->heading ('p', $this->icon ('email_delete') . 'Note: Updating this summary information will not send any e-mail.');
 		
 		# Databind the form
 		$form->dataBinding (array (
@@ -618,7 +621,7 @@ class helpdesk extends frontControllerApplication
 		}
 		
 		# Save the call
-		if (!$callId = $this->saveCall ($result, true, $html /* amended by reference */)) {
+		if (!$callId = $this->saveCall ($result, true, $enableMessaging = false, $html /* amended by reference */)) {
 			return $html;
 		}
 		
@@ -633,7 +636,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Function to save the call
-	private function saveCall ($result, $isUpdate, &$html)
+	private function saveCall ($result, $isUpdate, $enableMessaging = true, &$html)
 	{
 		# Move the image to its final URL
 		#!# Not clear why this doesn't apply for editing a call
@@ -653,10 +656,12 @@ class helpdesk extends frontControllerApplication
 		# Determine the call number
 		$callId = ($isUpdate ? $result['id'] : $this->databaseConnection->getLatestId ());
 		
-		# Assemble and insert the message
-		if (!$isUpdate) {
-			$from = $result['username'] . '@' . $this->settings['emailDomain'];
-			$this->addMessage ($callId, $result['details'], NULL, $from, $attachments, $isUpdate = false);
+		# Assemble and insert the message, unless unwanted (i.e. for updating metadata only)
+		if ($enableMessaging) {
+			if (!$isUpdate) {
+				$from = $result['username'] . '@' . $this->settings['emailDomain'];
+				$this->addMessage ($callId, $result['details'], NULL, $from, $attachments, $isUpdate = false);
+			}
 		}
 		
 		# Return the call ID
