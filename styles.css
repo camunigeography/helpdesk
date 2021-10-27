@@ -19,6 +19,8 @@
 #helpdesk p.helpdeskdescription {margin-bottom: 1em;}
 #helpdesk table.lines.regulated td.key {width: 180px;}
 #helpdesk div.expandable .switch {text-align: left;}
+#helpdesk div.expandable h3 a {padding-right: 60px;}
+#helpdesk div.expandable h3 img {position: absolute; right: 55px; margin-top: 2px;}
 #helpdesk div.expandable h3 a {color: #66c;}
 #helpdesk div.helpdeskcall table .title {max-width: 20em;}
 #helpdesk div.helpdeskcall form tr.upload div.draganddrop {border: 0;}

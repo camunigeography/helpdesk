@@ -1367,7 +1367,13 @@ class helpdesk extends frontControllerApplication
 		$panels = array ();
 		foreach ($calls as $id => $call) {
 			$title  = "#{$id} [{$call['formattedDate']}]: {$call['subject']}" . ($this->userIsAdministrator ? " - {$call['user']}" : '');
-			$panels[$id]  = "\n<h3>" . htmlspecialchars ($title) . ($call['currentStatus'] == 'completed' ? ' <span class="resolved">[resolved]</span>' : '') . '</h3>';
+			$replyStatus = '';
+			if ($this->userIsAdministrator && $this->action == 'calls') {
+				if (!$call['latestReplyIsAdmin']) {
+					$replyStatus = '<img src="/images/icons/user_comment.png" class="icon" class="userreply" title="User has responded" />';
+				}
+			}
+			$panels[$id]  = "\n<h3>" . htmlspecialchars ($title) . ($call['currentStatus'] == 'completed' ? ' <span class="resolved">[resolved]</span>' : '') . $replyStatus . '</h3>';
 			$panels[$id] .= $this->callHtml ($call);
 		}
 		
@@ -1468,6 +1474,7 @@ class helpdesk extends frontControllerApplication
 				details,
 				administratorId,
 				messages.message AS reply,
+				LEFT(messages.email,LOCATE('@',messages.email) - 1) IN(SELECT id FROM `administrators` WHERE active = 'Yes') AS latestReplyIsAdmin,
 				internalNotes,
 				CONCAT(people.forename,' ',people.surname,' <',people.username,'>') as user,
 				CONCAT(DATE_FORMAT(CAST(timeSubmitted AS DATE), '%e/'), SUBSTRING(DATE_FORMAT(CAST(timeSubmitted AS DATE), '%M'), 1, 3), DATE_FORMAT(CAST(timeSubmitted AS DATE), '/%y')) AS formattedDate
