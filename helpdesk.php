@@ -845,8 +845,12 @@ class helpdesk extends frontControllerApplication
 			'submitButtonText' => 'Send reply',
 		));
 		
-		# Add reply field
-		$form->heading ('p', $this->icon ('comment') . ' When replying, please trim any lines from the quoted text that are no longer relevant, to help keep e-mails shorter.');
+		# Reply field - introduction
+		$introductionHtml  = '<p>' . $this->icon ('comment') . ' When replying, please trim any lines from the quoted text that are no longer relevant, to help keep e-mails shorter.</p>';
+		$introductionHtml .= $this->cannedResponses ();
+		$form->heading ('', $introductionHtml);
+		
+		# Reply field
 		$form->textarea (array (
 			'name' => 'message',
 			'title' => 'Reply',
@@ -890,6 +894,55 @@ class helpdesk extends frontControllerApplication
 		# Confirm success by setting a flash message and redirecting
 		$redirectTo = $this->baseUrl . "/calls/{$call['id']}/" . "#message{$messageId}";
 		$html = application::setFlashMessage ('confirm', 'success', $redirectTo);
+		
+		# Return the HTML
+		return $html;
+	}
+	
+	
+	# Function to enable canned responses
+	private function cannedResponses ()
+	{
+		# Only admins get canned responses
+		if (!$this->userIsAdministrator) {return;}
+		
+		# Compile HTML and JS
+		$html .= '<p class="cannedresponses right small">Use canned response: &nbsp; <a href="#" id="preset-close">Believed resolved</a> | <a href="#" id="preset-anyupdate">Any update?</a> | <a href="#" id="preset-unresponded">Unresponded</a></p>';
+		$html .= "
+			<script>
+				$(function () {
+					$('p.cannedresponses a').click (function (e) {
+						e.preventDefault ();
+						
+						// Determine the reply
+						var replyType = e.target.id.replace ('preset-', '');
+						var reply;
+						var status;
+						switch (replyType) {
+							case 'close':
+								reply = \"We believe this call is now resolved and are closing the call.\\n\\n(Please reply if it is still an issue for you.)\";
+								status = 'completed';
+								break;
+							case 'anyupdate':
+								reply = \"Do you have any update on this, or should we close the call and regard it as resolved for you?\";
+								status = 'completed';
+								break;
+							case 'unresponded':
+								reply = \"This call has not been responded to for a while, so it is now being closed.\\n\\n(Please reply if it is still an issue for you.)\";
+								status = 'researching';
+								break;
+						}
+						
+						// Set the reply
+						$('#form_message').val (reply);
+						$('#form_message').attr ('rows', 8);	// Avoid over-long box so that button is visible
+						
+						// Set status
+						$('#form_currentStatus').val (status);
+					});
+				});
+			</script>
+		";
 		
 		# Return the HTML
 		return $html;
