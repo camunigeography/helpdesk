@@ -1062,13 +1062,19 @@ class helpdesk extends frontControllerApplication
 		# Recipient(s)
 		// a. Initial submission of call (or reply to user's own message before admins have picked up) goes: To all admins
 		if (!$replyingToMessage || !$call['administratorId']) {
-			$to = $this->getAdminRecipients ();
+			$toEmails = $this->getAdminRecipients ();
 		// b. If a reply, goes to the opposite person (admin/caller), Cc: the other admins
 		} else {
 			#!# Needs real name added
-			$to = ($this->userIsAdministrator ? $call['username'] : $call['administratorId']) . "@{$this->settings['emailDomain']}";
-			$headers['cc'] = 'Cc: ' . $this->getAdminRecipients ($exclude = $call['administratorId']);
+			#!# This is over-complex code and can probably now be simplified
+			$toEmails = array ();
+			$toEmails[] = ($this->userIsAdministrator ? $call['username'] : $call['administratorId']) . "@{$this->settings['emailDomain']}";
+			$toEmails = array_merge ($toEmails, $this->getAdminRecipients ($exclude = $call['administratorId']));
+			$toEmails = array_unique ($toEmails);
 		}
+		
+		# Compile the 'to' list as a string of usernames for display
+		$toUsernames = str_replace ("@{$this->settings['emailDomain']}", '', implode (', ', $toEmails));
 		
 		# Subject has the call ID and current title
 		$subject = ($replyingToMessage ? 'Re: ' : '') . "[Helpdesk][{$call['id']}] " . $call['subject'];
@@ -1080,12 +1086,16 @@ class helpdesk extends frontControllerApplication
 		}
 		$message .= "\n\n" . $newMessage;
 		$message .= "\n\n\n" . $userDetails['forename'];	// Signature
-		$message .= "\n\n\n" . 'You can reply by e-mail, or on the web at:';
+		$message .= "\n\n" . '(This e-mail has been sent to: ' . $toUsernames . '.)';
+		$message .= "\n\n" . 'You can reply by e-mail, or on the web at:';
 		$message .= "\n" . $_SERVER['_SITE_URL'] . $this->baseUrl . "/calls/{$call['id']}/";
 		
 		# Send the e-mail
-		if (!application::utf8Mail ($to, $subject, wordwrap ($message), implode ("\n", $headers))) {
-			$html .= $this->throwError ('There was a problem sending an e-mail' . ($replyingToMessage ? " to alert the {$this->settings['type']} staff to the call" : '') . ', but the call details have been logged successfully.');
+		foreach ($toEmails as $toEmail) {
+			//var_dump (array ($toEmail, $subject, wordwrap ($message), implode ("\n", $headers)));
+			if (!application::utf8Mail ($toEmail, $subject, wordwrap ($message), implode ("\n", $headers))) {
+				$html .= $this->throwError ('There was a problem sending an e-mail' . ($replyingToMessage ? " to alert the {$this->settings['type']} staff to the call" : '') . ', but the call details have been logged successfully.');
+			}
 		}
 		
 		# Report outcome
@@ -1093,10 +1103,7 @@ class helpdesk extends frontControllerApplication
 		$html .= "\n<hr />";
 		$html .= "\n<pre>";
 		$html .= htmlspecialchars ($headers['from']);
-		$html .= 'To: ' . $to;
-		if (isSet ($headers['cc'])) {
-			$html .= "\n" . htmlspecialchars ($headers['cc']);
-		}
+		$html .= "\n" . 'To: ' . $toUsernames;
 		$html .= "\n" . 'Subject: ' . htmlspecialchars ($subject);
 		$html .= "\n" . wordwrap (htmlspecialchars ($message));
 		$html .= '</pre>';
@@ -1118,9 +1125,6 @@ class helpdesk extends frontControllerApplication
 			}
 		}
 		if (!$recipients) {$recipients[] = $this->settings['administratorEmail'];}
-		
-		# Convert to comma-separated string
-		$recipients = implode (', ', $recipients);
 		
 		# Return the recipients
 		return $recipients;
