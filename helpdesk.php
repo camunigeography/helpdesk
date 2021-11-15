@@ -752,7 +752,7 @@ class helpdesk extends frontControllerApplication
 			$html .= "\n<h4 id=\"message{$id}\"><a href=\"#message{$id}\">#</a> " . ($i == 0 ? 'Initial request' : 'Reply') . ' from&nbsp; ' . $userReference . ':</h4>';
 			
 			# Show file(s) attached to this message if present
-			$htmlPattern = '<p class="attachment"><a href="%1$s" target="_blank">Attachment</a></p>';
+			$htmlPattern = '<p class="attachment"><a href="%1$s">Attachment</a></p>';
 			$html .= "\n" . $this->showAttachments ($call['id'], $message['id'], $this->settings['supportedFileExtensions'], $htmlPattern);
 			
 			# Add the message
