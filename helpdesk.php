@@ -30,7 +30,8 @@ class helpdesk extends frontControllerApplication
 			'incomingMailLog' => false,		// Set path or false; file must be writeable by incoming mail processor user, e.g. 'Debian-exim'
 			'pearLocation' => false,		// If not already in the include_path, e.g. '/usr/share/php/' for Debian/Ubuntu
 			'userLink' => false,	// Link to information about the user, with %username in the string
-			'supportedImageExtensions' => array ('jpg', 'jpeg', 'png', 'gif'),
+			'supportedImageExtensions' => array ('jpg', 'jpeg', 'png', 'gif', ),
+			'supportedFileExtensions' => array ('doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', ),
 		);
 		
 		# Return the defaults
@@ -750,11 +751,16 @@ class helpdesk extends frontControllerApplication
 			}
 			$html .= "\n<h4 id=\"message{$id}\"><a href=\"#message{$id}\">#</a> " . ($i == 0 ? 'Initial request' : 'Reply') . ' from&nbsp; ' . $userReference . ':</h4>';
 			
+			# Show file(s) attached to this message if present
+			$htmlPattern = '<p class="attachment"><a href="%1$s" target="_blank">Attachment</a></p>';
+			$html .= "\n" . $this->showAttachments ($call['id'], $message['id'], $this->settings['supportedFileExtensions'], $htmlPattern);
+			
 			# Add the message
 			$html .= "\n" . $this->formattedMessageBox ($message['message'], $id);
 			
 			# Show image(s) attached to this message if present
-			$html .= "\n" . $this->showImageAttachments ($call['id'], $message['id']);
+			$htmlPattern = '<a href="%1$s" target="_blank"><img src="%1$s" width="300" class="shadow" /></a>';
+			$html .= "\n" . $this->showAttachments ($call['id'], $message['id'], $this->settings['supportedImageExtensions'], $htmlPattern);
 			
 			# End box
 			$html .= "\n</div>";
@@ -778,9 +784,9 @@ class helpdesk extends frontControllerApplication
 	}
 	
 	
-	# Function to show image attachments
+	# Function to show image/file attachments
 	# Filename format is {callId}-{messageId}-{index}.{extension}; these are read dynamically rather than using any database storage
-	private function showImageAttachments ($callId, $messageId)
+	private function showAttachments ($callId, $messageId, $extensions, $htmlPattern)
 	{
 		# Start the HTML
 		$html = '';
@@ -790,22 +796,22 @@ class helpdesk extends frontControllerApplication
 		while (true) {
 			
 			# Check if this index has an image, checking each extension
-			$imagePresent = false;	// For this $i
-			foreach ($this->settings['supportedImageExtensions'] as $extension) {
-				$imagePath = $this->baseUrl . '/images/' . $callId . '-' . $messageId . '-' . $i . '.' . $extension;
-				if (file_exists ($_SERVER['DOCUMENT_ROOT'] . $imagePath)) {
-					$imagePresent = true;
+			$filePresent = false;	// For this $i
+			foreach ($extensions as $extension) {
+				$filePath = $this->baseUrl . '/images/' . $callId . '-' . $messageId . '-' . $i . '.' . $extension;
+				if (file_exists ($_SERVER['DOCUMENT_ROOT'] . $filePath)) {
+					$filePresent = true;
 					break;	// Do not check further extensions
 				}
 			}
 			
-			# Break loop if image not present - no point checking further $i increments
-			if (!$imagePresent) {
+			# Break loop if file not present - no point checking further $i increments
+			if (!$filePresent) {
 				break;
 			}
 			
 			# Create the HTML
-			$html .= "<a href=\"{$imagePath}\" target=\"_blank\"><img src=\"{$imagePath}\" width=\"300\" class=\"shadow\" /></a>";
+			$html .= sprintf ($htmlPattern, $filePath);
 			
 			# Try next
 			$i++;
@@ -1002,7 +1008,7 @@ class helpdesk extends frontControllerApplication
 	}
 	
 	
-	# Function to save attachments; filename format is {callId}-{messageId}-{index}.{extension} - see showImageAttachments ()
+	# Function to save attachments; filename format is {callId}-{messageId}-{index}.{extension} - see showAttachments ()
 	private function saveAttachments ($attachments, $callId, $messageId)
 	{
 		# End if none

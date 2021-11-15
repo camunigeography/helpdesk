@@ -30,3 +30,6 @@
 #helpdesk p#messageadded {margin-bottom: 2em;}
 #helpdesk div.messagebox {margin-bottom: 2em;}
 #helpdesk .metadataform td:first-child {min-width: 250px;}
+#helpdesk p.attachment {clear: right; float: right;}
+#helpdesk p.attachment a {padding: 5px 5px 5px 24px; border: 1px solid #ccc; border-radius: 5px;}
+
