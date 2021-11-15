@@ -468,7 +468,7 @@ class helpdesk extends frontControllerApplication
 			'lookupFunctionParameters' => array (NULL, false, true, false, $firstOnly = true),
 			'includeOnly' => $includeOnly,
 			'attributes' => array (
-				'subject' => array ('autofocus' => true, ),
+				'subject' => array ('autofocus' => ($this->action == 'report'), ),
 				'location' => array ('disallow' => '(http|https)://', ),
 				'imageFile' => array ('directory' => $this->attachmentsDirectory, 'forcedFileName' => application::generatePassword (8, false), 'allowedExtensions' => $this->settings['supportedImageExtensions'], 'lowercaseExtension' => true, 'required' => false, 'thumbnail' => true, 'flatten' => true, 'previewLocationPrefix' => "{$this->baseUrl}/images/", 'thumbnailExpandable' => true, ),
 				'username' => array ('type' => 'select', 'values' => $this->userList (true), 'description' => "This box is shown only to {$this->settings['type']} staff.", 'default' => $this->user, ),
