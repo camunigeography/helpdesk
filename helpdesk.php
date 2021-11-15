@@ -912,7 +912,7 @@ class helpdesk extends frontControllerApplication
 		if (!$this->userIsAdministrator) {return;}
 		
 		# Compile HTML and JS
-		$html .= '<p class="cannedresponses right small">Use canned response: &nbsp; <a href="#" id="preset-close">Believed resolved</a> | <a href="#" id="preset-anyupdate">Any update?</a> | <a href="#" id="preset-unresponded">Unresponded</a></p>';
+		$html  = '<p class="cannedresponses right small">Use canned response: &nbsp; <a href="#" id="preset-close">Believed resolved</a> | <a href="#" id="preset-anyupdate">Any update?</a> | <a href="#" id="preset-unresponded">Unresponded</a></p>';
 		$html .= "
 			<script>
 				$(function () {
