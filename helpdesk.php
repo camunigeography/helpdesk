@@ -998,10 +998,10 @@ class helpdesk extends frontControllerApplication
 		$messageId = ($result ? $this->databaseConnection->getLatestId () : false);
 		
 		# Save the attachments, if any
-		$this->saveAttachments ($attachments, $callId, $messageId);
+		$attachmentLocations = $this->saveAttachments ($attachments, $callId, $messageId);
 		
 		# Send e-mail
-		$html .= $this->emailCorrespondence ($callId, $message, $previousMessage);
+		$html .= $this->emailCorrespondence ($callId, $message, $previousMessage, $attachmentLocations);
 		
 		# Return the message ID
 		return $messageId;
@@ -1012,10 +1012,11 @@ class helpdesk extends frontControllerApplication
 	private function saveAttachments ($attachments, $callId, $messageId)
 	{
 		# End if none
-		if (!$attachments) {return;}
+		if (!$attachments) {return array ();}
 		
 		# Loop through each attachment and save it
 		$i = 0;
+		$attachmentLocations = array ();
 		foreach ($attachments as $filename => $attachment /* either true for saved file, or binary payload */) {
 			
 			# Determine the destination
@@ -1029,14 +1030,20 @@ class helpdesk extends frontControllerApplication
 				file_put_contents ($fileDestination, $attachment);
 			}
 			
+			# Register the final location
+			$attachmentLocations[] = $fileDestination;
+			
 			# Next
 			$i++;
 		}
+		
+		# Return the attachment locations
+		return $attachmentLocations;
 	}
 	
 	
 	# Function to send mail correspondence about a call
-	private function emailCorrespondence ($callId, $newMessage, $replyingToMessage = array ())
+	private function emailCorrespondence ($callId, $newMessage, $replyingToMessage = array (), $attachmentLocations = array ())
 	{
 		# Get the call data; this is done freshly to ensure a complete object with a known structure
 		$call = $this->getCalls ($callId);
@@ -1092,8 +1099,8 @@ class helpdesk extends frontControllerApplication
 		
 		# Send the e-mail
 		foreach ($toEmails as $toEmail) {
-			//var_dump (array ($toEmail, $subject, wordwrap ($message), implode ("\n", $headers)));
-			if (!application::utf8Mail ($toEmail, $subject, wordwrap ($message), implode ("\n", $headers))) {
+			//var_dump (array ($toEmail, $subject, wordwrap ($message), implode ("\n", $headers), $attachmentLocations));
+			if (!application::utf8Mail ($toEmail, $subject, wordwrap ($message), implode ("\n", $headers), NULL, true, $attachmentLocations)) {
 				$html .= $this->throwError ('There was a problem sending an e-mail' . ($replyingToMessage ? " to alert the {$this->settings['type']} staff to the call" : '') . ', but the call details have been logged successfully.');
 			}
 		}
