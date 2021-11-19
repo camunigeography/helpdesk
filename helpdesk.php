@@ -31,7 +31,7 @@ class helpdesk extends frontControllerApplication
 			'pearLocation' => false,		// If not already in the include_path, e.g. '/usr/share/php/' for Debian/Ubuntu
 			'userLink' => false,	// Link to information about the user, with %username in the string
 			'supportedImageExtensions' => array ('jpg', 'jpeg', 'png', 'gif', ),
-			'supportedFileExtensions' => array ('doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', ),
+			'supportedFileExtensions' => array ('doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'pdf', ),
 		);
 		
 		# Return the defaults
