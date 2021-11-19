@@ -918,7 +918,8 @@ class helpdesk extends frontControllerApplication
 		if (!$this->userIsAdministrator) {return;}
 		
 		# Compile HTML and JS
-		$html  = '<p class="cannedresponses right small">Use canned response: &nbsp; <a href="#" id="preset-close">Believed resolved</a> | <a href="#" id="preset-anyupdate">Any update?</a> | <a href="#" id="preset-unresponded">Unresponded</a></p>';
+		#!# Merge this HTML with the switch below, to avoid having to make changes in two places
+		$html  = '<p class="cannedresponses right small">Use canned response: &nbsp; <a href="#" id="preset-close">Believed resolved</a> | <a href="#" id="preset-duplicate">Duplicate</a> | <a href="#" id="preset-anyupdate">Any update?</a> | <a href="#" id="preset-unresponded">Unresponded</a></p>';
 		$html .= "
 			<script>
 				$(function () {
@@ -932,6 +933,10 @@ class helpdesk extends frontControllerApplication
 						switch (replyType) {
 							case 'close':
 								reply = \"We believe this call is now resolved and are closing the call.\\n\\n(Please reply if it is still an issue for you.)\";
+								status = 'completed';
+								break;
+							case 'duplicate':
+								reply = \"This appears to be a duplicate call, so is being closed.\\n\\nWe will respond on the other call with the same name.\";
 								status = 'completed';
 								break;
 							case 'anyupdate':
