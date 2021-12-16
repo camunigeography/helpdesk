@@ -1006,7 +1006,7 @@ class helpdesk extends frontControllerApplication
 		$attachmentLocations = $this->saveAttachments ($attachments, $callId, $messageId);
 		
 		# Send e-mail
-		$html .= $this->emailCorrespondence ($callId, $message, $previousMessage, $attachmentLocations);
+		$html = $this->emailCorrespondence ($callId, $message, $previousMessage, $attachmentLocations);
 		
 		# Return the message ID
 		return $messageId;
