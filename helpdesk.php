@@ -1831,6 +1831,14 @@ class helpdesk extends frontControllerApplication
 		$importMail = new importMail ($this->settings['pearLocation']);
 		list ($from, $subject, $time, $message, $attachments) = $importMail->main ($simplifyFrom = true);
 		
+		# Process the incoming mail
+		return $this->processIncomingMail ($from, $subject, $time, $message, $attachments);
+	}
+	
+	
+	# Function to process incoming mail
+	private function processIncomingMail ($from, $subject, $time, $message, $attachments)
+	{
 		# Log incoming mail if required (1) - pure parsed mail
 		if ($this->settings['incomingMailLog']) {
 			$emailData = array (
