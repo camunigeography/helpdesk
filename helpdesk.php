@@ -661,7 +661,7 @@ class helpdesk extends frontControllerApplication
 		if ($enableMessaging) {
 			if (!$isUpdate) {
 				$from = $result['username'] . '@' . $this->settings['emailDomain'];
-				$this->addMessage ($callId, $result['details'], NULL, $from, $attachments, $isUpdate = false);
+				$this->addMessage ($callId, $result['details'], NULL, $from, 'NOW()', $attachments, $isUpdate = false);
 			}
 		}
 		
@@ -897,7 +897,7 @@ class helpdesk extends frontControllerApplication
 		
 		# Add the message (and send e-mail)
 		$from = "{$this->user}@{$this->settings['emailDomain']}";
-		if (!$messageId = $this->addMessage ($call['id'], $result['message'], NULL, $from, $attachments)) {
+		if (!$messageId = $this->addMessage ($call['id'], $result['message'], NULL, $from, 'NOW()', $attachments)) {
 			$html = "\n<p class=\"warning\">There was a problem saving the new message - please try again later.</p>";
 			return $html;
 		}
@@ -976,7 +976,7 @@ class helpdesk extends frontControllerApplication
 	
 	# Function to add a message to a call, which will also send an e-mail
 	# NB $attachments should be supplied as array ($filename => true if file exists / $binaryPayload, ...)
-	private function addMessage ($callId, $message, $messageHtmlOriginal = NULL, $from, $attachments, $isUpdate = true)
+	private function addMessage ($callId, $message, $messageHtmlOriginal = NULL, $from, $timeString /* e.g. NOW() or SQLtime string */, $attachments, $isUpdate = true)
 	{
 		# Get the details of the previous message, for use in the e-mail reply
 		$previousMessage = false;
@@ -990,7 +990,7 @@ class helpdesk extends frontControllerApplication
 			'message'				=> $message,
 			'messageHtmlOriginal'	=> $messageHtmlOriginal,	// In case the original message ever needs to be reconverted
 			'email'					=> $from,
-			'createdAt'				=> 'NOW()',
+			'createdAt'				=> $timeString,
 		);
 		
 		# Insert the reply, or end (which will then ignore the attachment(s))
@@ -1920,8 +1920,11 @@ class helpdesk extends frontControllerApplication
 			}
 		}
 		
+		# Convert Unixtime to SQLtime
+		$timeString = date ('Y-m-d H:i:s', $time);
+		
 		# Add the message (and send e-mail)
-		$this->addMessage ($callId, $message, $messageHtmlOriginal, $from, $attachments);
+		$this->addMessage ($callId, $message, $messageHtmlOriginal, $from, $timeString, $attachments);
 	}
 	
 	
