@@ -1,6 +1,8 @@
 <?php
 
-# NB For mail ingesting, there should be an /etc/aliases entry as follows:
+# NB For mail ingesting, there should be a cron entry as follows:
+# helpdesk: | php /path/to/helpdesk/index.html mailbox
+# or, for direct ingesting, an /etc/aliases entry as follows:
 # helpdesk: | php /path/to/helpdesk/index.html ingestmail
 
 # Important: This can be run in a shell context, so line endings must be correct
@@ -14,10 +16,13 @@ $settings = array (
 	'type'				=> 'computing',
 	'callsEmail'		=> 'helpdesk@example.com',		// Must match what is in /etc/aliases
 	'incomingMailLog'	=> '/path/to/file.txt',		// Must be writeable by incoming mail processor user, e.g. 'Debian-exim'
+	'mailboxImap'		=> false,
+	'mailboxUsername'	=> false,
+	'mailboxPassword'	=> false,
 );
 
 
-# Additional environment settings for shell context (for ingestmail)
+# Additional environment settings for shell context (for mailbox / ingestmail)
 if (PHP_SAPI == 'cli') {
 	
 	# Set the standard include path

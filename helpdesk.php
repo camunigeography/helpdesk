@@ -1,5 +1,10 @@
 <?php
 
+# Load libraries for mailbox ()
+require_once ('vendor/autoload.php');
+use PhpImap\Exceptions\ConnectionException;
+use PhpImap\Mailbox;
+
 # Class to create a helpdesk facility
 require_once ('frontControllerApplication.php');
 class helpdesk extends frontControllerApplication
@@ -32,6 +37,9 @@ class helpdesk extends frontControllerApplication
 			'userLink' => false,	// Link to information about the user, with %username in the string
 			'supportedImageExtensions' => array ('jpg', 'jpeg', 'png', 'gif', ),
 			'supportedFileExtensions' => array ('doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'pdf', ),
+			'mailboxImap' => false,
+			'mailboxUsername' => false,
+			'mailboxPassword' => false,
 		);
 		
 		# Return the defaults
@@ -100,6 +108,15 @@ class helpdesk extends frontControllerApplication
 			'ingestmail' => array (
 				'description' => 'Incoming e-mail gateway',
 				'url' => false,
+				'export' => true,
+			),
+			'mailbox' => array (
+				'description' => 'Mailbox viewer',
+				'url' => 'mailbox.html',
+				'enableIf' => ($this->settings['mailboxImap']),
+				'administrator' => true,
+				'parent' => 'admin',
+				'subtab' => 'Mailbox',
 				'export' => true,
 			),
 		);
@@ -1925,6 +1942,95 @@ class helpdesk extends frontControllerApplication
 		
 		# Add the message (and send e-mail)
 		$this->addMessage ($callId, $message, $messageHtmlOriginal, $from, $timeString, $attachments);
+	}
+	
+	
+	# Function to view the mailbox; requires PHP's imap extension, and php-imap library; see: https://github.com/barbushin/php-imap
+	public function mailbox ()
+	{
+		# Connect to the mailbox
+		$mailbox = new Mailbox (
+			$this->settings['mailboxImap'],
+			$this->settings['mailboxUsername'],
+			$this->settings['mailboxPassword'],
+			false,	// Attachments auto-saving
+			'UTF-8'
+		);
+		
+		# Do not auto-download attachments
+		$mailbox->setAttachmentsIgnore (true);
+		
+		# Get all messages; see imap_search criteria at: https://php.net/imap-search
+		try {
+			$emailIds = $mailbox->searchMailbox ('UNSEEN', $disableServerEncoding = true);	// Second argument - see: https://github.com/barbushin/php-imap/issues/101
+		} catch (PhpImap\Exceptions\ConnectionException $ex) {
+			echo 'ERROR: IMAP connection failed: ' . $ex;
+			return false;
+		}
+		
+		# End if no e-mails
+		if (!$emailIds) {
+			//echo 'No e-mails.';
+			return;
+		}
+		
+		# Loop through each e-mail
+		foreach ($emailIds as $emailId) {
+			
+			# Get the e-mail
+			$email = $mailbox->getMail ($emailId, false);
+			//var_dump ($email);
+			
+			# Properties
+			$from = $email->fromAddress;
+			$subject = $email->subject;
+			$time = strtotime ($email->date);
+			
+			# Message
+			if ($email->textPlain) {
+				$message = $email->textPlain;
+			} else if ($email->textHtml) {
+				$message = $email->textHtml;
+				if (substr_count ($email->contentType, 'Windows-1252')) {	// Handle curly quotes; see: https://stackoverflow.com/a/1262060/180733
+					$search = array (chr(145), chr(146), chr(147), chr(148), chr(151));
+				    $replace = array ("'", "'", '"', '"', '-');
+					$message = str_replace ($search, $replace, $message);
+				}
+				$message = preg_replace ('|<style ([^>]+)>([^<]+)</style>|', '', $message);		// Style tags would retain content within
+				$message = strip_tags ($message);   // Convert to plain text
+				$message = str_replace ("\n\n\n\n", "\n\n", $message);
+				$message = application::numeric_entities ($message);
+				$message = html_entity_decode ($message, ENT_COMPAT, 'UTF-8');
+				$message = trim ($message);
+			} else {
+				#!# Generates an error - not sure why this works
+				$message = @$email->getRawBody;
+			}
+			
+			# Attachments
+			//var_dump ($email->getAttachments ());
+			$attachments = array ();
+			if ($email->hasAttachments ()) {
+				$attachmentsRaw = $email->getAttachments ();
+				foreach ($attachmentsRaw as $attachmentRaw) {
+					$filename = '/tmp/attachment-' . time () . '-' . rand (0, 99999999);
+					$attachmentRaw->setFilePath ($filename);
+					if ($attachmentRaw->saveToDisk ()) {
+						$attachments[$filename] = file_get_contents ($filename);
+						unlink ($filename);
+					} else {
+						// Log error saving to disk
+					}
+				}
+			}
+			
+			# Process the message
+			//var_dump ($from, $subject, $time, $message, $attachments);
+			$this->processIncomingMail ($from, $subject, $time, $message, $attachments);
+			
+			# Mark the message as read
+			$mailbox->markMailAsRead ($emailId);
+		}
 	}
 	
 	

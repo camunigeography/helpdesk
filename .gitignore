@@ -1,2 +1,5 @@
 index.html
 
+composer.lock
+composer.phar
+/vendor/
