@@ -37,6 +37,7 @@ class helpdesk extends frontControllerApplication
 			'userLink' => false,	// Link to information about the user, with %username in the string
 			'supportedImageExtensions' => array ('jpg', 'jpeg', 'png', 'gif', ),
 			'supportedFileExtensions' => array ('doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'pdf', ),
+			'usernameFromEmailCallback' => false,	// Callback to look up the username for a non- @{emailDomain} e-mail; provides (databaseConnection, email)
 			'mailboxImap' => false,
 			'mailboxUsername' => false,
 			'mailboxPassword' => false,
@@ -1866,6 +1867,16 @@ class helpdesk extends frontControllerApplication
 				'attachments' => array_keys ($attachments),
 			);
 			file_put_contents ($this->settings['incomingMailLog'], print_r ($emailData, true), FILE_APPEND);
+		}
+		
+		# If the e-mail does not match the domain, check for a customised e-mail
+		if ($this->settings['usernameFromEmailCallback']) {
+			if (!preg_match ("/@{$this->settings['emailDomain']}$/", $from)) {
+				$callbackFunction = $this->settings['usernameFromEmailCallback'];
+				if ($username = $callbackFunction ($this->databaseConnection, $from)) {
+					$from = $username . "@{$this->settings['emailDomain']}";
+				}
+			}
 		}
 		
 		# Discard the mail, taking no action, if the subject shows it is a bounce
