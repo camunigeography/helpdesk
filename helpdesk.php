@@ -1013,6 +1013,7 @@ class helpdesk extends frontControllerApplication
 		
 		# Insert the reply, or end (which will then ignore the attachment(s))
 		if (!$result = $this->databaseConnection->insert ($this->settings['database'], 'messages', $insert)) {
+			//var_dump ($this->databaseConnection->error ());
 			#!# Throw error
 			return false;
 		}
@@ -1900,11 +1901,15 @@ class helpdesk extends frontControllerApplication
 		# Extract the username from the from address
 		$fromUsername = preg_replace ("/@{$this->settings['emailDomain']}$/", '', $from);
 		
-		# For security, ensure the from address matches the call user or any admin
+		# For security, ensure the from address matches the call user or any admin, or issue bounce if unmatched
 		$validUsers = array_keys ($this->administrators);
 		$validUsers[] = $call['username'];
 		if (!in_array ($fromUsername, $validUsers)) {
-			#!# Issue bounce, stating that it should be from the official domain
+			$bounceMessage  = "Sorry, we couldn't match your e-mail {$from}, which does not appear to be registered to this call (#{$callId}). Please ensure you use your <username>@{$this->settings['emailDomain']} address.";
+			$bounceMessage .= "\n" . '--' . "\n";
+			$bounceMessage .= application::emailQuoting (trim ($message));
+			$extraHeaders  = "From: \"Helpdesk\" <{$this->settings['callsEmail']}>";
+			application::utf8Mail ($from, 'Helpdesk: Unrecognised username', wordwrap ($bounceMessage), $extraHeaders);
 			return false;
 		}
 		
