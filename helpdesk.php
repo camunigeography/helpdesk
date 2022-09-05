@@ -35,7 +35,7 @@ class helpdesk extends frontControllerApplication
 			'incomingMailLog' => false,		// Set path or false; file must be writeable by incoming mail processor user, e.g. 'Debian-exim'
 			'pearLocation' => false,		// If not already in the include_path, e.g. '/usr/share/php/' for Debian/Ubuntu
 			'userLink' => false,	// Link to information about the user, with %username in the string
-			'supportedImageExtensions' => array ('jpg', 'jpeg', 'png', 'gif', ),
+			'supportedImageExtensions' => array ('jpg', 'jpeg', 'png', 'gif', 'heic', 'heif', ),
 			'supportedFileExtensions' => array ('doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'pdf', ),
 			'usernameFromEmailCallback' => false,	// Callback to look up the username for a non- @{emailDomain} e-mail; provides (databaseConnection, email)
 			'mailboxImap' => false,
