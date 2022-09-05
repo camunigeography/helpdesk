@@ -163,13 +163,13 @@ class helpdesk extends frontControllerApplication
 			  `active` enum('','Yes','No') NOT NULL DEFAULT 'Yes' COMMENT 'Currently active?',
 			  `receiveHelpdeskEmail` enum('Yes','No') NOT NULL DEFAULT 'Yes',
 			  `state` text COMMENT 'Headings expanded'
-			) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Helpdesk administrators';
+			) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Helpdesk administrators';
 			
 			-- Settings
 			CREATE TABLE IF NOT EXISTS `settings` (
 			  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT 'Automatic key (ignored)',
 			  `homepageMessageHtml` TEXT NULL COMMENT 'Homepage message (if any)'
-			) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Settings';
+			) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Settings';
 			INSERT INTO settings (id) VALUES (1);
 			
 			-- Calls
@@ -188,7 +188,7 @@ class helpdesk extends frontControllerApplication
 			  `timeOpened` datetime DEFAULT NULL,
 			  `timeCompleted` datetime DEFAULT NULL,
 			  `internalNotes` text
-			) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+			) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 			
 			-- Messages
 			CREATE TABLE `messages` (
@@ -199,7 +199,7 @@ class helpdesk extends frontControllerApplication
 			  `email` VARCHAR(255) NOT NULL COMMENT 'E-mail',
 			  `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Automatic timestamp',
 			  PRIMARY KEY (`id`)
-			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Messages';
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Messages';
 			
 			-- Categories
 			CREATE TABLE `categories` (
@@ -207,7 +207,7 @@ class helpdesk extends frontControllerApplication
 			  `category` varchar(255) NOT NULL COMMENT 'Category',
 			  `listpriority` DECIMAL(2,0) NOT NULL DEFAULT '0' COMMENT 'List priority (smaller numbers = earlier)',
 			  `hide` TINYINT NULL DEFAULT NULL COMMENT 'Hide for new calls?'
-			) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+			) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 			
 			-- Searches
 			CREATE TABLE `searches` (
@@ -215,7 +215,7 @@ class helpdesk extends frontControllerApplication
 			  `search` varchar(255) NOT NULL COMMENT 'Search phrase',
 			  `username` varchar(20) NOT NULL COMMENT 'Username',
 			  `datetime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Automatic timestamp'
-			) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Table of searches';
+			) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Table of searches';
 		";
 	}
 	
