@@ -1,12 +1,10 @@
 <?php
 
 # Load libraries for mailbox ()
-require_once ('vendor/autoload.php');
 use PhpImap\Exceptions\ConnectionException;
 use PhpImap\Mailbox;
 
 # Class to create a helpdesk facility
-require_once ('frontControllerApplication.php');
 class helpdesk extends frontControllerApplication
 {
 	# Function to assign defaults additional to the general application defaults
@@ -1494,7 +1492,6 @@ class helpdesk extends frontControllerApplication
 		$saveState = ($this->userIsAdministrator && $this->action == 'calls');
 		
 		# Convert the panels to an expandable listing
-		require_once ('jquery.php');
 		$jQuery = new jQuery ($this->databaseConnection, "{$this->baseUrl}/data.html", $_SERVER['REMOTE_USER']);
 		$jQuery->expandable ($panels, $expandState, $saveState);
 		$html = $jQuery->getHtml ();
@@ -1609,7 +1606,6 @@ class helpdesk extends frontControllerApplication
 	public function data ()
 	{
 		# Delegate to jQuery
-		require_once ('jquery.php');
 		$jQuery = new jQuery ($this->databaseConnection, "{$this->baseUrl}/data.html", $_SERVER['REMOTE_USER']);
 		return $jQuery->expandable_data ($this->settings['database'], 'administrators', 'id');
 	}
@@ -1846,7 +1842,6 @@ class helpdesk extends frontControllerApplication
 	{
 		# Load the mail importer and decode the mail
 		# NB $attachments are supplied as array ($filename => true if file exists / $binaryPayload, ...)
-		require_once ('importMail.php');
 		$importMail = new importMail ($this->settings['pearLocation']);
 		list ($from, $subject, $time, $message, $attachments) = $importMail->main ($simplifyFrom = true);
 		
@@ -2054,7 +2049,6 @@ class helpdesk extends frontControllerApplication
 	private function unHtml ($html)
 	{
 		# Convert using html2text; see: https://github.com/soundasleep/html2text
-		require_once ('html2text.php');
 		$string = convert_html_to_text ($html);
 		return $string;
 	}

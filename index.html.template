@@ -35,7 +35,7 @@ if (PHP_SAPI == 'cli') {
 
 
 # Run the application with the specified settings
-require_once ('helpdesk.php');
+require_once ('vendor/autoload.php');
 new helpdesk ($settings);
 
 ?>

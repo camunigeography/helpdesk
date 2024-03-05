@@ -4,14 +4,10 @@
 #   
 #   # Assessments
 #   Include /path/to/helpdesk/.httpd.conf.extract.txt
-#   Use MacroHelpdesk "/it/helpdesk" "IT helpdesk" "/path/to/helpdesk/:/path/to/php/libraries/:/path/to/php/libraries/html2text/"
+#   Use MacroHelpdesk "/it/helpdesk" "IT helpdesk"
 
 
-<Macro MacroHelpdesk $applicationBaseUrl $description $includePath>
-	
-	<Location $applicationBaseUrl>
-		php_value include_path "$includePath"
-	</Location>
+<Macro MacroHelpdesk $applicationBaseUrl $description>
 	
 	Use MacroFrontControllerApplication "$applicationBaseUrl/" "$description"
 	
