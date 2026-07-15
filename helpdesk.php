@@ -653,7 +653,7 @@ class helpdesk extends frontControllerApplication
 	
 	
 	# Function to save the call
-	private function saveCall ($result, $isUpdate, $enableMessaging = true, &$html)
+	private function saveCall ($result, $isUpdate, $enableMessaging = true, &$html = '')
 	{
 		# Move the image to its final URL
 		#!# Not clear why this doesn't apply for editing a call
@@ -992,7 +992,7 @@ class helpdesk extends frontControllerApplication
 	
 	# Function to add a message to a call, which will also send an e-mail
 	# NB $attachments should be supplied as array ($filename => true if file exists / $binaryPayload, ...)
-	private function addMessage ($callId, $message, $messageHtmlOriginal = NULL, $from, $timeString /* e.g. NOW() or SQLtime string */, $attachments, $isUpdate = true)
+	private function addMessage ($callId, $message, $messageHtmlOriginal, $from, $timeString /* e.g. NOW() or SQLtime string */, $attachments, $isUpdate = true)
 	{
 		# Get the details of the previous message, for use in the e-mail reply
 		$previousMessage = false;
