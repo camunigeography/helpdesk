@@ -1648,14 +1648,16 @@ class helpdesk extends frontControllerApplication
 		$call['timeSubmitted'] = date ('l jS M Y, g.ia', strtotime ($call['timeSubmitted']));
 		
 		# Remove double line-breaks in the reply
-		$call['reply'] = str_replace ("\r\n", "\n", $call['reply']);
-		while (substr_count ($call['reply'], "\n\n\n")) {
-			$call['reply'] = str_replace ("\n\n\n", "\n\n", $call['reply']);
+		if ($call['reply']) {
+			$call['reply'] = str_replace ("\r\n", "\n", $call['reply']);
+			while (substr_count ($call['reply'], "\n\n\n")) {
+				$call['reply'] = str_replace ("\n\n\n", "\n\n", $call['reply']);
+			}
 		}
 		
 		# Convert HTML entities in array
 		foreach ($call as $key => $value) {
-			$call[$key] = nl2br (htmlspecialchars (trim ($value)));
+			$call[$key] = (!is_null ($value) ? nl2br (htmlspecialchars (trim ($value))) : $value);
 		}
 		
 		# Substitute the job status
