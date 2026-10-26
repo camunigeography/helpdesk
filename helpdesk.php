@@ -7,6 +7,12 @@ use PhpImap\Mailbox;
 # Class to create a helpdesk facility
 class helpdesk extends frontControllerApplication
 {
+	# Class properties
+	private $userDetails;
+	private $attachmentsDirectory;
+	
+	
+	
 	# Function to assign defaults additional to the general application defaults
 	public function defaults ()
 	{
