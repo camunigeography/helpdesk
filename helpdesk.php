@@ -1314,8 +1314,10 @@ class helpdesk extends frontControllerApplication
 		unset ($get);
 		
 		# Set the result
-		$this->searchTerm = $result['q'];
-		$this->searchStatus = $result['what'];
+		if ($result) {
+			$this->searchTerm = $result['q'];
+			$this->searchStatus = $result['what'];
+		}
 	}
 	
 	
