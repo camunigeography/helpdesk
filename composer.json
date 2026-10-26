@@ -7,11 +7,11 @@
     "require": {
         "php-imap/php-imap": "^4.5.3",
         "soundasleep/html2text": "^2.1",
-        "libpurecontent/frontcontrollerapplication": "^1.13",
+        "libpurecontent/frontcontrollerapplication": "^1.20",
         "libpurecontent/jquery": "^1.1",
         "libpurecontent/importmail": "^1.3",
-        "libpurecontent/application": "^1.9",
-        "libpurecontent/ultimateform": "^1.29"
+        "libpurecontent/application": "^1.10",
+        "libpurecontent/ultimateform": "^1.32"
     },
     "autoload": {
         "files": ["helpdesk.php"]
